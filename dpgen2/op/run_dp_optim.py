@@ -30,7 +30,10 @@ from dflow.python import (
 )
 
 from dpgen2.constants import (
-    calypso_log_name,
+    calypso_check_opt_file,
+    calypso_run_opt_file,
+    calypso_opt_log_name,
+    calypso_traj_log_name,
 )
 from dpgen2.utils import (
     BinaryFileInput,
@@ -41,14 +44,11 @@ from dpgen2.utils.run_command import (
 )
 
 
-class RunCalypso(OP):
-    r"""Execute CALYPSO to generate structures in work_dir.
+class RunOptim(OP):
+    r"""Run structure optimization for CALYPSO-generated structures.
 
-    Changing the work directory into `task_name`. All input files
-    have been copied or symbol linked to this directory `task_name` by
-    `PrepCalyInput`. The CALYPSO command is exectuted from directory `task_name`.
-    The `caly.log` and the `work_dir` will be stored in `op["log"]` and
-    `op["work_dir"]`, respectively.
+    Structure optimization will be executed in `optim_path`. The trajectory
+    will be stored in files `op["traj"]` and `op["model_devi"]`, respectively.
 
     """
 
@@ -57,7 +57,9 @@ class RunCalypso(OP):
         return OPIOSign(
             {
                 "config": BigParameter(dict),
-                "task_path": Artifact[Path],
+                "work_dir": Artifact(Path),
+                "optim_name": str,
+                "optim_path": Artifact(Path),
             }
         )
 
@@ -66,7 +68,7 @@ class RunCalypso(OP):
         return OPIOSign(
             {
                 "log": Artifact(Path),
-                "work_dir": Artifact(Path),
+                "traj": Artifact(Path),
             }
         )
 
@@ -81,38 +83,43 @@ class RunCalypso(OP):
         ----------
         ip : dict
             Input dict with components:
-
-            - `config`: (`dict`) The config of lmp task. Check `RunLmp.lmp_args` for definitions.
-            - `task_path`: (`Path`) The name of the task.
+            - `config`: (`dict`) The config of calypso optim task. Check `RunOptim.optim_args` for definitions.
+            - `optim_name`: (`str`) The name of the task.
+            - `optim_path`: (`Artifact(Path)`) The path that contains one optim task prepareed by `PrepDPOptim`.
 
         Returns
         -------
         Any
             Output dict with components:
-            - `log`: (`Artifact(Path)`) The log file of LAMMPS.
-            - `work_dir`: (`Artifact(Path)`) The directory of structures.
+            - `log`: (`Artifact(Path)`) The log file of structure optimization.
+            - `traj`: (`Artifact(Path)`) The trajectory file of structure optimization.
 
         Raises
         ------
         TransientError
-            On the failure of CALYPSO execution. Resubmit rule should be clear.
+            On the failure of LAMMPS execution. Handle different failure cases? e.g. loss atoms.
         """
         config = ip["config"] if ip["config"] is not None else {}
-        config = RunCalypso.normalize_config(config)
-        command = config["command"]
+        config = RunOptim.normalize_config(config)
+        command = config.get("command", "python")  # command should provide the python path
 
-        work_dir = ip["task_path"]
+        optim_name = ip["optim_name"]
+        optim_path = ip["optim_path"]
+        work_dir = Path(optim_name)
 
         with set_directory(work_dir):
+            # debug
+            input_files = [ii.resolve() for ii in Path(work_dir).iterdir()]
+            print(input_files)
 
-            # run calypso
-            command =  " ".join([command, ">", calypso_log_name])
+            # run optimization
+            command = " ".join([command, "-u", calypso_run_opt_file, "||", command, calypso_check_opt_file, ">", calypso_opt_log_name])
             ret, out, err = run_command(command, shell=True)
             if ret != 0:
                 logging.error(
                     "".join(
                         (
-                            "calypso failed\n",
+                            "structure optimization failed\n",
                             "command was: ",
                             command,
                             "out msg: ",
@@ -124,29 +131,11 @@ class RunCalypso(OP):
                         )
                     )
                 )
-                raise TransientError("calypso failed")
+                raise TransientError("Structure optimization failed")
 
         ret_dict = {
-            "log": work_dir / calypso_log_name,
-            "work_dir": work_dir,
+            "log": work_dir / calypso_opt_log_name,
+            "traj": work_dir / calypso_traj_log_name,
         }
 
         return OPIO(ret_dict)
-
-    @staticmethod
-    def calypso_args():
-        doc_calypso_cmd = "The command of calypso (absolute path of calypso.x)."
-        return [
-            Argument("command", str, optional=True, default="calypso.x", doc=doc_calypso_cmd),
-        ]
-
-    @staticmethod
-    def normalize_config(data={}):
-        ta = RunCalypso.calypso_args()
-        base = Argument("base", dict, ta)
-        data = base.normalize_value(data, trim_pattern="_*")
-        base.check_value(data, strict=True)
-        return data
-
-
-config_args = RunCalypso.calypso_args

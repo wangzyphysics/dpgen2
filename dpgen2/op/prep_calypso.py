@@ -147,6 +147,8 @@ necessary_keys = {
     "NameOfAtoms": "",
     "AtomicNumber": "",
     "NumberOfAtoms": "",
+    "PopSize": 30,
+    "MaxStep": 10,
     "distanceofion": "",
     # "@DistanceOfIon
     # "@End
@@ -160,8 +162,6 @@ default_key_value = {
     "Volume": 0,
     "Ialgo": 2,
     "PsoRatio": 0.6,
-    "PopSize": 30,
-    "MaxStep": 10,
     "ICode": 15,
     "NumberOfLbest": 4,
     "NumberOfLocalOptim": 3,
@@ -188,10 +188,13 @@ calypso_run_opt_str = """#!/usr/bin/env python3
 
 import os, time
 import numpy as np
-from ase.io import read 
+
+from ase.io import read, write
+from ase.io.trajectory import Trajectory
 from ase.optimize import LBFGS
 from ase.constraints import UnitCellFilter
-from deepmd.calculator import DP 
+
+from deepmd.calculator import DP
 '''
 structure optimization with DP model and ASE
 PSTRESS and fmax should exist in input.dat
@@ -294,14 +297,46 @@ def run_opt(fmax, stress):
     element, ele = Get_Element_Num(atoms_symbols)
 
     Write_Contcar(element, ele, atoms_lat, atoms_pos)
-    Write_Outcar(element, ele, atoms_vol, atoms_lat, atoms_pos,atoms_ene, atoms_force, atoms_stress * -10.0, pstress)"""
+    Write_Outcar(element, ele, atoms_vol, atoms_lat, atoms_pos,atoms_ene, atoms_force, atoms_stress * -10.0, pstress)
+
+    try:
+        trajs = Trajectory("traj.traj")
+    except:
+        pass
+
+    numb_traj = len(trajs)
+    assert numb_traj >= 1, "traj file is broken."
+    origin = trajs[0]
+    dis_mtx = origin.get_all_distances(mic=True)
+    row, col = np.diag_indices_from(dis_mtx)
+    dis_mtx[row, col] = np.nan
+    is_reasonable = np.nanmin(dis_mtx) > 0.6
+
+    if is_reasonable:
+        if len(trajs) >= 20 :
+           selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
+        elif 5 <= len(trajs) < 20:
+           selected_traj = [trajs[np.random.randint(4, len(trajs) - 1)] for _ in range(4)]
+           selected_traj.append(trajs[-1])
+        elif 3 <= len(trajs) < 5:
+           selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
+           selected_traj.append(trajs[-1])
+        elif len(trajs) == 2:
+           selected_traj = [trajs[0], trajs[-1]]
+        else:  # len(trajs) == 1
+           selected_traj = [trajs[0]]
+
+        for idx, traj in enumerate(selected_traj):
+            write(f"{idx}.poscar", traj)
+            """
+
 
 calypso_check_opt_str = """#!/usr/bin/env python3
 
 import os
 import numpy as np
-from ase.io import read
-from ase.io.trajectory import TrajectoryWriter
+from ase.io import read, write
+from ase.io.trajectory import Trajectory, TrajectoryWriter
 
 '''
 check if structure optimization worked well
@@ -388,6 +423,36 @@ def check():
     atoms_ene_f =  610612509
     Write_Contcar(element_f, ele_f, atoms_lat_f, atoms_pos_f)
     Write_Outcar(element_f, ele_f, atoms_vol_f, atoms_lat_f, atoms_pos_f,atoms_ene_f, atoms_force_f, atoms_stress_f * -10.0, 0)
+
+    try:
+        trajs = Trajectory("traj.traj")
+    except:
+        pass
+
+    numb_traj = len(trajs)
+    assert numb_traj >= 1, "traj file is broken."
+    origin = trajs[0]
+    dis_mtx = origin.get_all_distances(mic=True)
+    row, col = np.diag_indices_from(dis_mtx)
+    dis_mtx[row, col] = np.nan
+    is_reasonable = np.nanmin(dis_mtx) > 0.6
+
+    if is_reasonable:
+        if len(trajs) >= 20 :
+           selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
+        elif 5 <= len(trajs) < 20:
+           selected_traj = [trajs[np.random.randint(4, len(trajs) - 1)] for _ in range(4)]
+           selected_traj.append(trajs[-1])
+        elif 3 <= len(trajs) < 5:
+           selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
+           selected_traj.append(trajs[-1])
+        elif len(trajs) == 2:
+           selected_traj = [trajs[0], trajs[-1]]
+        else:  # len(trajs) == 1
+           selected_traj = [trajs[0]]
+
+        for idx, traj in enumerate(selected_traj):
+            write(f"{idx}.poscar", traj)
 
 if __name__ == "__main__":
     cwd = os.getcwd()
