@@ -58,12 +58,11 @@ class RunCalypso(OP):
         return OPIOSign(
             {
                 "config": BigParameter(dict),  # for command
-                "task_name": str,  # calypso_task.idx
-                "input_file": Artifact[Path],  # input.dat, !!! must be provided
-
-                "step": Artifact[Path] | None,  # step file
-                "results": Artifact[Path] | None,  # dir named results for evo
-                "opt_results_dir": Artifact[Path] | None,  # dir contains POSCAR* CONTCAR* OUTCAR*
+                "task_name": BigParameter(str),  # calypso_task.idx
+                "input_file": Artifact(Path),  # input.dat, !!! must be provided
+                "step": Artifact(Path) or None,  # step file
+                "results": Artifact(Path) or None,  # dir named results for evo
+                "opt_results_dir": Artifact(Path) or None,  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
 
@@ -71,9 +70,9 @@ class RunCalypso(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "task_name": Artifact[Path],  # calypso_task.idx
+                "task_name": str,  # calypso_task.idx
                 "poscar_dir": Artifact(Path),  # dir contains POSCAR* of next step
-                "input_file": Artifact[Path],  # input.dat
+                "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
                 "step": Artifact(Path),  # step
             }
@@ -173,7 +172,7 @@ class RunCalypso(OP):
     def calypso_args():
         doc_calypso_cmd = "The command of calypso (absolute path of calypso.x)."
         return [
-            Argument("command", str, optional=True, default="calypso.x", doc=doc_calypso_cmd),
+            Argument("run_calypso_command", str, optional=True, default="calypso.x", doc=doc_calypso_cmd),
         ]
 
     @staticmethod

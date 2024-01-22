@@ -1,6 +1,7 @@
 import json
 import shutil
 import pickle
+import logging
 from pathlib import (
     Path,
 )
@@ -15,11 +16,10 @@ from dflow.python import (
     Artifact,
     BigParameter,
     OPIOSign,
+    TransientError,
 )
 
 from dpgen2.constants import (
-    calypso_run_opt_file,
-    calypso_check_opt_file,
     calypso_opt_dir_name,
     model_name_pattern,
 )
@@ -35,7 +35,7 @@ from dpgen2.utils.run_command import (
 )
 
 
-class PrepDPOptim(OP):
+class PrepRunDPOptim(OP):
     r"""Prepare the working directories and input file for structure optimization with DP.
 
     `POSCAR_*`, `model.000.pb`, `calypso_run_opt.py` and `calypso_check_opt.py` will be copied
@@ -49,13 +49,12 @@ class PrepDPOptim(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "caly_input": dict,  # calypso input params
-                "caly_structure_path_name": Artifact(
-                    Path
-                ),  # the directory where the structures are in
-                "input_file_path_name": Artifact(
-                    Path
-                ),  # the models, scripts location. (prep_caly_input)
+                "config": BigParameter(dict),
+                "task_name": str,  # calypso_task.idx
+                "poscar_dir": Artifact(Path),  # the directory where the structures are in
+                "models_dir": Artifact(Path),  # the directory where the models are in
+                "caly_run_opt_file": Artifact(Path),
+                "caly_check_opt_file": Artifact(Path),
             }
         )
 
@@ -63,11 +62,8 @@ class PrepDPOptim(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                # "work_dir": Artifact(Path),  # the directory where the structures are in
-                "optim_names": List[str],
-                "optim_paths": Artifact(
-                    List[Path]
-                ),  # each optim_paths containing one structure and related file optim needed.
+                "optim_results_dir": Artifact[Path],
+                "traj_results_dir": Artifact(Path),
             }
         )
 
@@ -82,54 +78,114 @@ class PrepDPOptim(OP):
         ----------
         ip : dict
             Input dict with components:
-            - `caly_input` : (`dict`) Definitions for CALYPSO input file.
-            - `caly_structure_path_name` : (`str`) The directory where the structures are in.
-            - `input_file_path_name` : (`str`)
+            - `config`: (`dict`) The config of calypso task to obtain the command of calypso.
+            - `task_name` : (`str`)
+            - `poscar_dir` : (`Path`)
+            - `models_dir` : (`Path`)
 
         Returns
         -------
         op : dict
             Output dict with components:
 
-            - `optim_names`: (`List[str]`) The name of optim tasks. Will be used as the identities of the tasks. The names of different tasks are different.
-            - `optim_paths`: (`Artifact(List[Path])`) The parepared optim paths of the task containing input files (`calypso_run_opt.py` and `calypso_check_opt.py`, `frozen_model.pb`) needed to optimize structure by DP.
+            - `optim_results_dir`: (`List[str]`)
+            - `traj_results_dir`: (`Artifact(List[Path])`)
         """
-        caly_input = ip["caly_input"]
-        popsize = caly_input.get("PopSize", 30)
-
-        work_dir = ip["caly_structure_path_name"]
-        poscar_str = "POSCAR_%d"
+        work_dir = ip["task_name"]
+        poscar_dir = ip["poscar_dir"]
+        models_dir = ip["models_dir"]
+        caly_run_opt_file = ip["caly_run_opt_file"]
+        caly_check_opt_file = ip["caly_run_opt_file"]
         poscar_list = [
-            Path(work_dir).joinpath(poscar_str % num).resolve()
-            for num in range(1, popsize + 1)
+            poscar.resolve()
+            for poscar in poscar_dir.iterdir()
         ]
+        model_list = [model.resolve() for model in models_dir.iterdir()]
+        model_list = sorted(model_list, key=lambda x: x.split(".")[1])
+        model_file = model_list[0]
 
-        prep_calypso_work_dir = ip["input_file_path_name"]
-        model_file = (
-            Path(prep_calypso_work_dir).joinpath(model_name_pattern % 0).resolve()
-        )
-        calypso_run_opt_script = (
-            Path(prep_calypso_work_dir).joinpath(calypso_run_opt_file).resolve()
-        )
-        calypso_check_opt_script = (
-            Path(prep_calypso_work_dir).joinpath(calypso_check_opt_file).resolve()
-        )
+        config = ip["config"] if ip["config"] is not None else {}
+        command = config.get("run_opt_command", "python -u calypso_run_opt.py")
 
-        optim_paths = []
         with set_directory(work_dir):
             for idx, poscar in enumerate(poscar_list):
-                opt_dir = calypso_opt_dir_name % idx
-                optim_paths.append(work_dir.joinpath(opt_dir))
-                with set_directory(opt_dir):
-                    Path("POSCAR").symlink_to(poscar)
-                    Path("frozen_model.pb").symlink_to(model_file)
-                    Path(calypso_run_opt_file).symlink_to(calypso_run_opt_script)
-                    Path(calypso_check_opt_file).symlink_to(calypso_check_opt_script)
-            optim_names = [str(ii) for ii in optim_paths]
+                Path(poscar.name).symlink_to(poscar)
+            Path("frozen_model.pb").symlink_to(model_file)
+            Path(caly_run_opt_file.name).symlink_to(caly_run_opt_file)
+            Path(caly_check_opt_file.name).symlink_to(caly_check_opt_file)
+
+            ret, out, err = run_command(command, shell=True)
+            if ret != 0:
+                logging.error(
+                    "".join(
+                        (
+                            "opt failed\n",
+                            "\ncommand was: ",
+                            command,
+                            "\nout msg: ",
+                            out,
+                            "\n",
+                            "\nerr msg: ",
+                            err,
+                            "\n",
+                        )
+                    )
+                )
+                raise TransientError("opt failed")
+
+            optim_results_dir = Path("optim_results_dir")
+            optim_results_dir.mkdir(parents=True, exist_ok=True)
+            for poscar in Path().glob("POSCAR_*"):
+                target = optim_results_dir.joinpath(poscar.name)
+                shutil.copyfile(poscar, target)
+            for contcar in Path().glob("CONTCAR_*"):
+                target = optim_results_dir.joinpath(contcar.name)
+                shutil.copyfile(contcar, target)
+            for outcar in Path().glob("OUTCAR_*"):
+                target = optim_results_dir.joinpath(outcar.name)
+                shutil.copyfile(outcar, target)
+
+            traj_results_dir = Path("traj_results_dir")
+            traj_results_dir.mkdir(parents=True, exist_ok=True)
+            for traj in Path().glob("*.traj"):
+                target = optim_results_dir.joinpath(traj.name)
+                shutil.copyfile(traj, target)
 
         return OPIO(
             {
-                "optim_names": optim_names,
-                "optim_paths": optim_paths,
+                "optim_results_dir": optim_results_dir,
+                "traj_results_dir": traj_results_dir,
             }
         )
+
+"""
+#     try:
+#         trajs = Trajectory("traj.traj")
+#     except:
+#         pass
+# 
+#     numb_traj = len(trajs)
+#     assert numb_traj >= 1, "traj file is broken."
+#     origin = trajs[0]
+#     dis_mtx = origin.get_all_distances(mic=True)
+#     row, col = np.diag_indices_from(dis_mtx)
+#     dis_mtx[row, col] = np.nan
+#     is_reasonable = np.nanmin(dis_mtx) > 0.6
+# 
+#     if is_reasonable:
+#         if len(trajs) >= 20 :
+#            selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
+#         elif 5 <= len(trajs) < 20:
+#            selected_traj = [trajs[np.random.randint(4, len(trajs) - 1)] for _ in range(4)]
+#            selected_traj.append(trajs[-1])
+#         elif 3 <= len(trajs) < 5:
+#            selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
+#            selected_traj.append(trajs[-1])
+#         elif len(trajs) == 2:
+#            selected_traj = [trajs[0], trajs[-1]]
+#         else:  # len(trajs) == 1
+#            selected_traj = [trajs[0]]
+# 
+#         for idx, traj in enumerate(selected_traj):
+#             write(f"{idx}.poscar", traj)
+"""
