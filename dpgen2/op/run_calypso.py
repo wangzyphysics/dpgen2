@@ -89,6 +89,7 @@ class RunCalypso(OP):
         -------
         Any
             Output dict with components:
+            - `work_dir_name`: (`List[str]`) The name of directory of structures.
             - `log`: (`Artifact(Path)`) The log file of LAMMPS.
             - `work_dir`: (`Artifact(Path)`) The directory of structures.
 
@@ -99,7 +100,7 @@ class RunCalypso(OP):
         """
         config = ip["config"] if ip["config"] is not None else {}
         config = RunCalypso.normalize_config(config)
-        command = config["command"]
+        command = config.get("run_calypso_command", "calypso.x")
 
         work_dir = ip["task_path"]
 
@@ -129,6 +130,7 @@ class RunCalypso(OP):
         ret_dict = {
             "log": work_dir / calypso_log_name,
             "work_dir": work_dir,
+            "work_dir_name": str(work_dir),
         }
 
         return OPIO(ret_dict)

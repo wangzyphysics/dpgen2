@@ -101,7 +101,7 @@ class RunOptim(OP):
         """
         config = ip["config"] if ip["config"] is not None else {}
         config = RunOptim.normalize_config(config)
-        command = config.get("command", "python")  # command should provide the python path
+        command = config.get("run_opt_command", "python")  # command should provide the python path
 
         optim_name = ip["optim_name"]
         optim_path = ip["optim_path"]

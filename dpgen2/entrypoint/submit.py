@@ -157,6 +157,15 @@ def make_concurrent_learning_op(
             run_config=run_explore_config,
             upload_python_packages=upload_python_packages,
         )
+    elif explore_style == "calypso":
+        prep_run_explore_op = PrepRunCalypso(
+            "prep-run-lmp",
+            PrepLmp,
+            RunLmp,
+            prep_config=prep_explore_config,
+            run_config=run_explore_config,
+            upload_python_packages=upload_python_packages,
+        )
     else:
         raise RuntimeError(f"unknown explore_style {explore_style}")
 

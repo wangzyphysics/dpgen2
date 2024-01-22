@@ -43,6 +43,7 @@ class PrepCalyInput(OP):
         return OPIOSign(
             {
                 "caly_inputs": List[dict],  # calypso input params
+                "models": Artifact(List[Path]),
             }
         )
 
@@ -50,6 +51,7 @@ class PrepCalyInput(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
+                "task_names": List[str],
                 "task_paths": Artifact(Path),  # task path containing all structures
             }
         )
