@@ -82,7 +82,7 @@ class RunCalypso(OP):
         ip : dict
             Input dict with components:
 
-            - `config`: (`dict`) The config of lmp task. Check `RunLmp.lmp_args` for definitions.
+            - `config`: (`dict`) The config of lmp task. Check `RunCalypso.calypso_args` for definitions.
             - `task_path`: (`Path`) The name of the task.
 
         Returns

@@ -20,6 +20,7 @@ from dflow.python import (
 from dpgen2.constants import (
     calypso_run_opt_file,
     calypso_check_opt_file,
+    calypso_opt_dir_name,
 )
 from dpgen2.exploration.task import (
     ExplorationTaskGroup,
@@ -103,7 +104,8 @@ class PrepDPOptim(OP):
 
 def _cp_file_to_optim(pop):
 
-    optim_path = Path(f"pop{str(pop)}")
+    # optim_path = Path(f"pop{str(pop)}")
+    optim_path = Path(calypso_opt_dir_name % pop)
     optim_path.mkdir(parents=True, exist_ok=True)
 
     # calypso_run_opt.py calypso_check_opt.py model.000.pb POSCAR_pop

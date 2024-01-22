@@ -21,6 +21,7 @@ calypso_log_name = "caly.log"
 calypso_input_file = "input.dat"
 calypso_index_pattern = "%06d"
 calypso_task_pattern = "caly_task." + calypso_index_pattern
+calypso_opt_dir_name = "caly_pop." + calypso_index_pattern
 calypso_run_opt_file = "calypso_run_opt.py"
 calypso_check_opt_file = "calypso_check_opt.py"
 calypso_opt_log_name = "opt.log"

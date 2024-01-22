@@ -93,6 +93,11 @@ class RunOptim(OP):
             Output dict with components:
             - `log`: (`Artifact(Path)`) The log file of structure optimization.
             - `traj`: (`Artifact(Path)`) The trajectory file of structure optimization.
+            - `POSCAR`: (`Artifact(Path)`) The poscar file of structure optimization.
+            - `CONTCAR`: (`Artifact(Path)`) The contccar file of structure optimization.
+            - `OUTCAR`: (`Artifact(Path)`) The outcar file of structure optimization.
+            - `work_dir`: (`Artifact(Path)`)
+            - `work_name`: (`str`)
 
         Raises
         ------
@@ -136,6 +141,11 @@ class RunOptim(OP):
         ret_dict = {
             "log": work_dir / calypso_opt_log_name,
             "traj": work_dir / calypso_traj_log_name,
+            "POSCAR": work_dir / "POSCAR",
+            "CONTCAR": work_dir / "CONTCAR",
+            "OUTCAR": work_dir / "OUTCAR",
+            "work_dir": work_dir,
+            "work_name": str(work_dir),
         }
 
         return OPIO(ret_dict)
