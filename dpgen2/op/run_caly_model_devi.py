@@ -1,51 +1,32 @@
-import json
-import logging
-import os
-import random
-import re
+import numpy as np
+from deepmd.infer import calc_model_devi
+from deepmd.calculator import DP
+
+from ase import Atoms
+from ase.io import Trajectory
+from ase.geometry import cellpar_to_cell
 from pathlib import (
     Path,
 )
 from typing import (
     List,
-    Optional,
-    Set,
-    Tuple,
 )
 
-from dargs import (
-    Argument,
-    ArgumentEncoder,
-    Variant,
-    dargs,
-)
 from dflow.python import (
     OP,
     OPIO,
     Artifact,
-    BigParameter,
-    FatalError,
     OPIOSign,
-    TransientError,
 )
 
-from dpgen2.constants import (
-    calypso_check_opt_file,
-    calypso_run_opt_file,
-    calypso_opt_log_name,
-    calypso_traj_log_name,
-)
+
 from dpgen2.utils import (
-    BinaryFileInput,
     set_directory,
 )
-from dpgen2.utils.run_command import (
-    run_command,
-)
 
 
-class CalyRunModelDevi(OP):
-    r"""Run structure optimization for CALYPSO-generated structures.
+class RunCalyModelDevi(OP):
+    r"""calculate model deviaion of trajectories structures.
 
     Structure optimization will be executed in `optim_path`. The trajectory
     will be stored in files `op["traj"]` and `op["model_devi"]`, respectively.
@@ -56,10 +37,8 @@ class CalyRunModelDevi(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "config": BigParameter(dict),
-                "work_dir": Artifact(Path),
-                "optim_name": str,
-                "optim_path": Artifact(Path),
+                "task_name": str,
+                "traj_dirs": Artifact(List[Path]),
             }
         )
 
@@ -67,8 +46,8 @@ class CalyRunModelDevi(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "log": Artifact(Path),
                 "traj": Artifact(Path),
+                "model_devi": Artifact(Path),
             }
         )
 
@@ -83,65 +62,168 @@ class CalyRunModelDevi(OP):
         ----------
         ip : dict
             Input dict with components:
-            - `config`: (`dict`) The config of calypso optim task. Check `RunOptim.optim_args` for definitions.
-            - `optim_name`: (`str`) The name of the task.
-            - `optim_path`: (`Artifact(Path)`) The path that contains one optim task prepareed by `PrepDPOptim`.
+            - `type_map`: (`str`) The type map of elements.
+            - `task_name`: (`str`) The name of the task.
+            - `traj_dirs`: (`Artifact(List[Path])`) The List of paths that contains trajectory files.
+            - `models`: (`Artifact(List[Path])`) The frozen model to estimate the model deviation.
 
         Returns
         -------
         Any
             Output dict with components:
-            - `log`: (`Artifact(Path)`) The log file of structure optimization.
-            - `traj`: (`Artifact(Path)`) The trajectory file of structure optimization.
-            - `POSCAR`: (`Artifact(Path)`) The poscar file of structure optimization.
-            - `CONTCAR`: (`Artifact(Path)`) The contccar file of structure optimization.
-            - `OUTCAR`: (`Artifact(Path)`) The outcar file of structure optimization.
-            - `work_dir`: (`Artifact(Path)`)
-            - `work_name`: (`str`)
+            - `traj`: (`Artifact(Path)`) The output trajectory.
+            - `model_devi`: (`Artifact(Path)`) The model deviation. The order of recorded model deviations should be consistent with the order of frames in `traj`.
 
-        Raises
-        ------
-        TransientError
-            On the failure of LAMMPS execution. Handle different failure cases? e.g. loss atoms.
         """
-        pass
-        # config = ip["config"] if ip["config"] is not None else {}
-        # # config = RunOptim.normalize_config(config)
-        # command = config.get("run_opt_command", "python")  # command should provide the python path
 
-        # optim_name = ip["optim_name"]
-        # optim_path = ip["optim_path"]
-        # work_dir = Path(optim_name)
-        # input_files = [ii.resolve() for ii in Path(work_dir).iterdir()]
+        models = ip["models"]
+        all_models = [model.resolve() for model in models]
+        graphs = [DP(model) for model in all_models]
 
-        # with set_directory(work_dir):
-        #     # link input files
-        #     for ii in input_files:
-        #         iname = ii.name
-        #         Path(iname).symlink_to(ii)
+        work_dir = Path(ip["task_name"])
 
-        #     # run optimization
-        #     command = " ".join([command, "-u", calypso_run_opt_file, "||", command, calypso_check_opt_file, ">", calypso_opt_log_name])
-        #     ret, out, err = run_command(command, shell=True)
-        #     if ret != 0:
-        #         logging.error(
-        #             "".join(
-        #                 (
-        #                     "structure optimization failed\n",
-        #                     "command was: ",
-        #                     command,
-        #                     "out msg: ",
-        #                     out,
-        #                     "\n",
-        #                     "err msg: ",
-        #                     err,
-        #                     "\n",
-        #                 )
-        #             )
-        #         )
-        #         raise TransientError("Structure optimization failed")
+        traj_dirs = ip["traj_dirs"]
+        traj_dirs = [traj_dir.resolve() for traj_dir in traj_dirs]
+
+        dump_file = work_dir.joinpath("traj.dump")
+        model_devi_file = work_dir.joinpath("model_devi.out")
+
+        Devis = []
+        tcount = 0
+        with set_directory(work_dir):
+            f = open(dump_file, "a")
+            for traj_dir in traj_dirs:
+                for traj_name in traj_dir.rglob("*.traj"):
+                    atoms_list = parse_traj(traj_name)
+                    for atoms in atoms_list:
+                        dump_str = atoms2lmpdump(atoms)
+                        f.write(dump_str)
+                        pbc = np.all(atoms.get_pbc())
+                        coord = atoms.get_positions().reshape(1, -1)
+                        cell = atoms.get_cell().reshape(1, -1) if pbc else None
+                        atom_types = atoms.numbers
+                        devi = calc_model_devi(coord, cell, atom_types, graphs)[0]
+                        devi[0] = tcount
+                        Devis.append(devi)
+                        tcount += 1
+            f.close()
+            Devis = np.vstack(Devis)
+            write_model_devi_out(Devis, model_devi_file)
 
         ret_dict = {
+            "traj": dump_file,
+            "model_devi": model_devi_file,
         }
 
         return OPIO(ret_dict)
+
+
+def atoms2lmpdump(atoms, struc_idx, type_map):
+    """down triangle cell can be obtained from
+    cell params: a, b, c, alpha, beta, gamma.
+    cell = cellpar_to_cell([a, b, c, alpha, beta, gamma])
+    lx, ly, lz = cell[0][0], cell[1][1], cell[2][2]
+    xy, xz, yz = cell[1][0], cell[2][0], cell[2][1]
+    (lx,ly,lz) = (xhi-xlo,yhi-ylo,zhi-zlo)
+    xlo_bound = xlo + MIN(0.0,xy,xz,xy+xz)
+    xhi_bound = xhi + MAX(0.0,xy,xz,xy+xz)
+    ylo_bound = ylo + MIN(0.0,yz)
+    yhi_bound = yhi + MAX(0.0,yz)
+    zlo_bound = zlo
+    zhi_bound = zhi
+
+    ref: https://docs.lammps.org/Howto_triclinic.html
+    """
+    dump_str = "ITEM: TIMESTEP\n"
+    dump_str += f"{struc_idx}\n"
+    dump_str += "ITEM: NUMBER OF ATOMS\n"
+    dump_str += f"{atoms.get_global_number_of_atoms()}\n"
+
+    cellpars = atoms.cell.cellpars()
+    new_cell = cellpar_to_cell(cellpars)
+    new_atoms = Atoms(
+        numbers=atoms.numbers,
+        cell=new_cell,
+        scaled_positions=atoms.get_scaled_positions(),
+    )
+
+    xy, xz, yz = new_cell[1][0], new_cell[2][0], new_cell[2][1]
+    xlo, ylo, zlo = 0, 0, 0
+    lx, ly, lz = new_cell[0][0], new_cell[1][1], new_cell[2][2]
+    xhi, yhi, zhi = lx + xlo, ly + ylo, lz + zlo
+    xlo_bound = xlo + min(0.0, xy, xz, xy + xz)
+    xhi_bound = xhi + max(0.0, xy, xz, xy + xz)
+    ylo_bound = ylo + min(0.0, yz)
+    yhi_bound = yhi + max(0.0, yz)
+    zlo_bound = zlo
+    zhi_bound = zhi
+
+    dump_str += "ITEM: BOX BOUNDS xy xz yz pp pp pp\n"
+    dump_str += "%20.10f %20.10f %20.10f\n" % (xlo_bound, xhi_bound, xy)
+    dump_str += "%20.10f %20.10f %20.10f\n" % (ylo_bound, yhi_bound, xz)
+    dump_str += "%20.10f %20.10f %20.10f\n" % (zlo_bound, zhi_bound, yz)
+    dump_str += "ITEM: ATOMS id type x y z fx fy fz\n"
+    for idx, atom in enumerate(new_atoms):
+        type_id = type_map.index(atom.symbol) + 1
+        dump_str += "%5d %5d" % (idx + 1, type_id)
+        dump_str += "%20.10f %20.10f %20.10f" % (
+            atom.position[0],
+            atom.position[1],
+            atom.position[2],
+        )
+        dump_str += "%20.10f %20.10f %20.10f\n" % (0, 0, 0)
+    dump_str = dump_str.strip("\n")
+    return dump_str
+
+
+def parse_traj(traj_file) -> None | List[Atoms]:
+    # optimization will at least return one structures in traj file
+    trajs = Trajectory(traj_file)
+
+    numb_traj = len(trajs)
+    assert numb_traj >= 1, "traj file is broken."
+
+    origin = trajs[0]
+    dis_mtx = origin.get_all_distances(mic=True)
+    row, col = np.diag_indices_from(dis_mtx)
+    dis_mtx[row, col] = np.nan
+    is_reasonable = np.nanmin(dis_mtx) > 0.6
+
+    if is_reasonable:
+        if len(trajs) >= 20:
+            selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
+        elif 5 <= len(trajs) < 20:
+            selected_traj = [
+                trajs[np.random.randint(4, len(trajs) - 1)] for _ in range(4)
+            ]
+            selected_traj.append(trajs[-1])
+        elif 3 <= len(trajs) < 5:
+            selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
+            selected_traj.append(trajs[-1])
+        elif len(trajs) == 2:
+            selected_traj = [trajs[0], trajs[-1]]
+        else:  # len(trajs) == 1
+            selected_traj = [trajs[0]]
+    else:
+        selected_traj = None
+    return selected_traj
+
+
+def write_model_devi_out(devi: np.ndarray, fname: str, header: str = ""):
+    assert devi.shape[1] == 8
+    header = "%s\n%10s" % (header, "step")
+    for item in "vf":
+        header += "%19s%19s%19s" % (
+            f"max_devi_{item}",
+            f"min_devi_{item}",
+            f"avg_devi_{item}",
+        )
+    with open(fname, "ab") as fp:
+        np.savetxt(
+            fp,
+            devi,
+            fmt=["%12d"] + ["%19.6e" for _ in range(devi.shape[1] - 1)],
+            delimiter="",
+            header=header,
+        )
+    return devi

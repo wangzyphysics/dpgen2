@@ -159,35 +159,3 @@ class PrepRunDPOptim(OP):
                 "traj_results_dir": traj_results_dir,
             }
         )
-
-"""
-#     try:
-#         trajs = Trajectory("traj.traj")
-#     except:
-#         pass
-# 
-#     numb_traj = len(trajs)
-#     assert numb_traj >= 1, "traj file is broken."
-#     origin = trajs[0]
-#     dis_mtx = origin.get_all_distances(mic=True)
-#     row, col = np.diag_indices_from(dis_mtx)
-#     dis_mtx[row, col] = np.nan
-#     is_reasonable = np.nanmin(dis_mtx) > 0.6
-# 
-#     if is_reasonable:
-#         if len(trajs) >= 20 :
-#            selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
-#         elif 5 <= len(trajs) < 20:
-#            selected_traj = [trajs[np.random.randint(4, len(trajs) - 1)] for _ in range(4)]
-#            selected_traj.append(trajs[-1])
-#         elif 3 <= len(trajs) < 5:
-#            selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
-#            selected_traj.append(trajs[-1])
-#         elif len(trajs) == 2:
-#            selected_traj = [trajs[0], trajs[-1]]
-#         else:  # len(trajs) == 1
-#            selected_traj = [trajs[0]]
-# 
-#         for idx, traj in enumerate(selected_traj):
-#             write(f"{idx}.poscar", traj)
-"""
