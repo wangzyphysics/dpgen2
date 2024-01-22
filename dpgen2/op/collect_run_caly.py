@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import re
+import shutil
 from pathlib import (
     Path,
 )
@@ -56,8 +57,13 @@ class RunCalypso(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "config": BigParameter(dict),
-                "task_path": Artifact[Path],
+                "config": BigParameter(dict),  # for command
+                "task_name": str,  # calypso_task.idx
+                "input_file": Artifact[Path],  # input.dat, !!! must be provided
+
+                "step": Artifact[Path] | None,  # step file
+                "results": Artifact[Path] | None,  # dir named results for evo
+                "opt_results_dir": Artifact[Path] | None,  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
 
@@ -65,8 +71,11 @@ class RunCalypso(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "log": Artifact(Path),
-                "work_dir": Artifact(Path),
+                "task_name": Artifact[Path],  # calypso_task.idx
+                "poscar_dir": Artifact(Path),  # dir contains POSCAR* of next step
+                "input_file": Artifact[Path],  # input.dat
+                "results": Artifact(Path),  # calypso generated results
+                "step": Artifact(Path),  # step
             }
         )
 
@@ -82,33 +91,48 @@ class RunCalypso(OP):
         ip : dict
             Input dict with components:
 
-            - `config`: (`dict`) The config of lmp task. Check `RunCalypso.calypso_args` for definitions.
-            - `task_name`: (`Path`) The name of the task.
+            - `config`: (`dict`) The config of calypso task to obtain the command of calypso.
+            - `task_name`: (`str`) The name of the task (calypso_task.{idx}).
+            - `input_file`: (`Path`) The input file of the task (input.dat).
+
+            - `step`: (`Path` | None) The step file from last calypso run
+            - `results`: (`Path` | None) The results dir from last calypso run
+            - `opt_results_dir`: (`Path` | None) The results dir contains POSCAR* CONTCAR* OUTCAR* from last calypso run
 
         Returns
         -------
         Any
             Output dict with components:
-            - `work_dir_name`: (`List[str]`) The name of directory of structures.
-            - `log`: (`Artifact(Path)`) The log file of LAMMPS.
-            - `work_dir`: (`Artifact(Path)`) The directory of structures.
+            - `poscar_dir`: (`Path`) The dir contains POSCAR*.
+
+            - `task_name`: (`str`) The name of the task (calypso_task.{idx}).
+            - `input_file`: (`Path`) The input file of the task (input.dat).
+            - `step`: (`Path`) The step file.
+            - `results`: (`Path`) The results dir.
 
         Raises
         ------
         TransientError
             On the failure of CALYPSO execution. Resubmit rule should be clear.
         """
+        # command
         config = ip["config"] if ip["config"] is not None else {}
         config = RunCalypso.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
-
+        # input.dat
+        input_file = ip["input_file"].resolve()
+        # work_dir name: calypso_task.idx
         work_dir = ip["task_name"]
-        input_dat = work_dir.joinpath("input.dat").resolve()
+
+        step = ip["step"]
+        results = ip["results"]
+        opt_results_dir = ip["opt_results_dir"]
 
         with set_directory(work_dir):
-
+            # prep files/dirs from last calypso run
+            prep_last_calypso_file(step, results, opt_results_dir)
             # copy input.dat
-            Path(input_dat.name).symlink_to(input_dat)
+            Path(input_file.name).symlink_to(input_file)
             # run calypso
             command = " ".join([command, ">", calypso_log_name])
             ret, out, err = run_command(command, shell=True)
@@ -129,11 +153,18 @@ class RunCalypso(OP):
                     )
                 )
                 raise TransientError("calypso failed")
+            poscar_dir = Path("poscar_dir")
+            poscar_dir.mkdir(parents=True, exist_ok=True)
+            for poscar in Path().glob("POSCAR_*"):
+                target = poscar_dir.joinpath(poscar.name)
+                shutil.copyfile(poscar, target)
 
         ret_dict = {
-            "log": work_dir / calypso_log_name,
-            "work_dir": work_dir,
-            "work_dir_name": str(work_dir),
+            "poscar_dir": poscar_dir,
+            "task_name": str(work_dir),
+            "input_file": input_file,
+            "step": work_dir.joinpath("step"),
+            "results": work_dir.joinpath("results"),
         }
 
         return OPIO(ret_dict)
@@ -155,3 +186,11 @@ class RunCalypso(OP):
 
 
 config_args = RunCalypso.calypso_args
+
+
+def prep_last_calypso_file(step, results, opt_results_dir):
+    if step is not None and results is not None and opt_results_dir is not None:
+        Path(step.name).symlink_to(step)
+        Path(results.name).symlink_to(results)
+        for file_name in opt_results_dir.iterdir():
+            Path(file_name.name).symlink_to(file_name)

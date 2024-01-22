@@ -16,7 +16,7 @@ from .run_dp_train import (
 from .run_lmp import (
     RunLmp,
 )
-from .run_calypso import (
+from .collect_run_caly import (
     RunCalypso,
 )
 from .select_confs import (

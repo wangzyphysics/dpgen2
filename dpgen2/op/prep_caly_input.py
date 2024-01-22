@@ -320,11 +320,9 @@ if __name__ == "__main__":
 class PrepCalyInput(OP):
     r"""Prepare the working directories and input file for generating structures.
 
-    A calypso input file will be generated and saved in working
-    directory (defined by `ip["task"]`), according to the
-    given parameters (defined by `ip["caly_input"]`).
-    The paths of the directory will be returned as `op["work_path"]`.
-
+    A calypso input file will be generated according to the given parameters
+    (defined by `ip["caly_inputs"]`). The artifact will be return
+    (ip[`input_files`]). The name of directory is `ip["task_names"]`.
     """
 
     @classmethod
@@ -332,7 +330,6 @@ class PrepCalyInput(OP):
         return OPIOSign(
             {
                 "caly_inputs": List[dict],  # calypso input params
-                "models": Artifact(List[Path]),
             }
         )
 
@@ -340,8 +337,8 @@ class PrepCalyInput(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "task_names": List[str],
-                "task_paths": Artifact(Path),  # task path containing all structures
+                "task_names": List[str],  # task dir names
+                "input_files": Artifact(Path),  # `input.dat`s
             }
         )
 
@@ -357,7 +354,6 @@ class PrepCalyInput(OP):
         ip : dict
             Input dict with components:
             - `caly_inputs` : (`List[dict]`) Definitions for CALYPSO input file.
-            - `models`: (`Artifact(List[Path])`) The frozen model to estimate the model deviation. The first model with be used to drive structure prediction simulation.
 
         Returns
         -------
@@ -365,7 +361,7 @@ class PrepCalyInput(OP):
             Output dict with components:
 
             - `task_names`: (`List[str]`) The name of CALYPSO tasks. Will be used as the identities of the tasks. The names of different tasks are different.
-            - `task_paths`: (`Artifact(List[Path])`) The parepared working paths of the task containing input files (`input.dat` and `calypso_run_opt.py`) needed to generate structures by CALYPSO and make structure optimization with DP model.
+            - `input_files`: (`Artifact(List[Path])`) The parepared working paths of the task containing input files (`input.dat` and `calypso_run_opt.py`) needed to generate structures by CALYPSO and make structure optimization with DP model.
         """
 
         necessary_keys = {
@@ -402,20 +398,14 @@ class PrepCalyInput(OP):
             "SpeSpaceGroup": "2 230",
         }
 
-        models = ip["models"]
-        model_files = [Path(ii).resolve() for ii in models]
-
         cc = 0
-        task_paths = []
+        task_names = []
+        input_files = []
         caly_inputs = ip["caly_inputs"]
         for caly_input in caly_inputs:
             update = caly_input.pop("UpDate", True)
             if update:
-                for (
-                    key
-                ) in (
-                    necessary_keys.keys()
-                ):  # All necessary keys must be included or raise.
+                for key in necessary_keys.keys():  # All necessary keys must be included or raise.
                     necessary_keys[key] = caly_input.pop(key)
                 default_key_value.update(caly_input)
                 default_key_value.update(necessary_keys)
@@ -423,42 +413,38 @@ class PrepCalyInput(OP):
                 default_key_value = caly_input
 
             tname = Path(calypso_task_pattern % cc)
-            with set_directory(tname):
-                tname = _mk_task_from_dict(default_key_value, cc)
+            input_file = _mk_task_from_dict(default_key_value, tname)
+            cc += 1
 
-                for idx, mm in enumerate(model_files):
-                    mname = model_name_pattern % (idx)
-                    Path(mname).symlink_to(mm)
-                # -----------------------------------------------------------------
-
-                task_paths.append(tname)
-                cc += 1
-        task_names = [str(ii) for ii in task_paths]
+            task_names.append(str(tname))
+            input_files.append(input_file)
         return OPIO(
             {
                 "task_names": task_names,
-                "task_paths": task_paths,
+                "input_files": input_files,
             }
         )
 
+def _mk_task_from_dict(mapping, tname):
+    with set_directory(tname):
+        distanceofion = mapping.pop("DistanceOfIon")
+        vsc = mapping.pop("VSC", "F").lower().startswith("t")
+        if vsc:
+            ctrlrange = mapping.pop("CtrlRange")
 
-def _mk_task_from_dict(mapping):
-    distanceofion = mapping.pop("DistanceOfIon")
-    vsc = mapping.pop("VSC", "F").lower().startswith("t")
-    if vsc:
-        ctrlrange = mapping.pop("CtrlRange")
-
-    file_str = ""
-    for key, value in mapping.items():
-        file_str += f"{key} = {str(value)}\n"
-    file_str += "@DistanceOfIon\n"
-    file_str += distanceofion + "\n"
-    file_str += "@End\n"
-    if vsc:
-        file_str += "@CtrlRange\n"
-        file_str += ctrlrange + "\n"
+        file_str = ""
+        for key, value in mapping.items():
+            file_str += f"{key} = {str(value)}\n"
+        file_str += "@DistanceOfIon\n"
+        file_str += distanceofion + "\n"
         file_str += "@End\n"
-    calypso_input_file.write_text(file_str)
+        if vsc:
+            file_str += "@CtrlRange\n"
+            file_str += ctrlrange + "\n"
+            file_str += "@End\n"
+        input_file = Path(calypso_input_file)
+        input_file.write_text(file_str)
+    return tname.joinpath(calypso_input_file)
 
     fmax = mapping.get("fmax", 0.01)
     pstress = mapping.get("PSTRESS", 0)

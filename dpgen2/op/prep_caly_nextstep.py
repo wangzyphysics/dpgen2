@@ -29,7 +29,7 @@ from dpgen2.constants import (
 from dpgen2.exploration.task import (
     ExplorationTaskGroup,
 )
-from dpgen2.op.run_calypso import (
+from dpgen2.dpgen2.op.collect_run_caly import (
     RunCalypso,
 )
 from dpgen2.utils import (
