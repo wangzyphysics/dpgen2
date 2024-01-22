@@ -62,7 +62,7 @@ class PrepRunDPOptim(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "optim_results_dir": Artifact[Path],
+                "optim_results_dir": Artifact(Path),
                 "traj_results_dir": Artifact(Path),
             }
         )
@@ -82,6 +82,8 @@ class PrepRunDPOptim(OP):
             - `task_name` : (`str`)
             - `poscar_dir` : (`Path`)
             - `models_dir` : (`Path`)
+            - `caly_run_opt_file` : (`Path`)
+            - `caly_check_opt_file` : (`Path`)
 
         Returns
         -------
@@ -91,17 +93,17 @@ class PrepRunDPOptim(OP):
             - `optim_results_dir`: (`List[str]`)
             - `traj_results_dir`: (`Artifact(List[Path])`)
         """
-        work_dir = ip["task_name"]
+        work_dir = Path(ip["task_name"])
         poscar_dir = ip["poscar_dir"]
         models_dir = ip["models_dir"]
-        caly_run_opt_file = ip["caly_run_opt_file"]
-        caly_check_opt_file = ip["caly_run_opt_file"]
+        caly_run_opt_file = ip["caly_run_opt_file"].resolve()
+        caly_check_opt_file = ip["caly_check_opt_file"].resolve()
         poscar_list = [
             poscar.resolve()
             for poscar in poscar_dir.iterdir()
         ]
         model_list = [model.resolve() for model in models_dir.iterdir()]
-        model_list = sorted(model_list, key=lambda x: x.split(".")[1])
+        model_list = sorted(model_list, key=lambda x: str(x).split(".")[1])
         model_file = model_list[0]
 
         config = ip["config"] if ip["config"] is not None else {}
@@ -148,7 +150,7 @@ class PrepRunDPOptim(OP):
             traj_results_dir = Path("traj_results_dir")
             traj_results_dir.mkdir(parents=True, exist_ok=True)
             for traj in Path().glob("*.traj"):
-                target = optim_results_dir.joinpath(traj.name)
+                target = traj_results_dir.joinpath(traj.name)
                 shutil.copyfile(traj, target)
 
         return OPIO(
