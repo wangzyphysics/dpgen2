@@ -83,7 +83,7 @@ class RunCalypso(OP):
             Input dict with components:
 
             - `config`: (`dict`) The config of lmp task. Check `RunCalypso.calypso_args` for definitions.
-            - `task_path`: (`Path`) The name of the task.
+            - `task_name`: (`Path`) The name of the task.
 
         Returns
         -------
@@ -102,12 +102,15 @@ class RunCalypso(OP):
         config = RunCalypso.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
 
-        work_dir = ip["task_path"]
+        work_dir = ip["task_name"]
+        input_dat = work_dir.joinpath("input.dat").resolve()
 
         with set_directory(work_dir):
 
+            # copy input.dat
+            Path(input_dat.name).symlink_to(input_dat)
             # run calypso
-            command =  " ".join([command, ">", calypso_log_name])
+            command = " ".join([command, ">", calypso_log_name])
             ret, out, err = run_command(command, shell=True)
             if ret != 0:
                 logging.error(

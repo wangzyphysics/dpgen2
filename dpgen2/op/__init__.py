@@ -7,7 +7,7 @@ from .prep_dp_train import (
 from .prep_lmp import (
     PrepLmp,
 )
-from .prep_calypso import (
+from .prep_caly_input import (
     PrepCalyInput,
 )
 from .run_dp_train import (

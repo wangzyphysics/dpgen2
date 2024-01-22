@@ -26,162 +26,14 @@ from dpgen2.constants import (
 from dpgen2.exploration.task import (
     ExplorationTaskGroup,
 )
-
-
-class PrepCalyInput(OP):
-    r"""Prepare the working directories and input file for generating structures.
-
-    A calypso input file will be generated and saved in working
-    directory (defined by `ip["task"]`), according to the
-    given parameters (defined by `ip["caly_input"]`).
-    The paths of the directory will be returned as `op["work_path"]`.
-
-    """
-
-    @classmethod
-    def get_input_sign(cls):
-        return OPIOSign(
-            {
-                "caly_inputs": List[dict],  # calypso input params
-                "models": Artifact(List[Path]),
-            }
-        )
-
-    @classmethod
-    def get_output_sign(cls):
-        return OPIOSign(
-            {
-                "task_names": List[str],
-                "task_paths": Artifact(Path),  # task path containing all structures
-            }
-        )
-
-    @OP.exec_sign_check
-    def execute(
-        self,
-        ip: OPIO,
-    ) -> OPIO:
-        r"""Execute the OP.
-
-        Parameters
-        ----------
-        ip : dict
-            Input dict with components:
-            - `caly_inputs` : (`List[dict]`) Definitions for CALYPSO input file.
-            - `models`: (`Artifact(List[Path])`) The frozen model to estimate the model deviation. The first model with be used to drive structure prediction simulation.
-
-        Returns
-        -------
-        op : dict
-            Output dict with components:
-
-            - `task_names`: (`List[str]`) The name of CALYPSO tasks. Will be used as the identities of the tasks. The names of different tasks are different.
-            - `task_paths`: (`Artifact(List[Path])`) The parepared working paths of the task containing input files (`input.dat` and `calypso_run_opt.py`) needed to generate structures by CALYPSO and make structure optimization with DP model.
-        """
-
-        models = ip["models"]
-        model_files = [Path(ii).resolve() for ii in models]
-
-        cc = 0
-        task_paths = []
-        caly_inputs = ip["caly_inputs"]
-        for caly_input in caly_inputs:
-            update = caly_input.pop("UpDate", True)
-            if update:
-                for key in necessary_keys.keys():  # All necessary keys must be included or raise.
-                    necessary_keys[key] = caly_input.pop(key)
-                default_key_value.update(caly_input)
-                default_key_value.update(necessary_keys)
-            else:
-                default_key_value = caly_input
-            tname = _mk_task_from_dict(default_key_value, cc)
-
-            # is model_files exist or mname? why link mname into model_files
-            for idx, mm in enumerate(model_files):
-                mname = model_name_pattern % (idx)
-                Path(mname).symlink_to(mm)
-            # -----------------------------------------------------------------
-
-            task_paths.append(tname)
-            cc += 1
-        task_names = [str(ii) for ii in task_paths]
-        return OPIO(
-            {
-                "task_names": task_names,
-                "task_paths": task_paths,
-            }
-        )
-
-PrepExplorationTaskGroup = PrepCalyInput
-
-def _mk_task_from_dict(mapping, cc):
-    tname = Path(calypso_task_pattern % cc)
-    tname.mkdir(exist_ok=True, parents=True)
-
-    distanceofion = mapping.pop("DistanceOfIon")
-    vsc = mapping.pop("VSC", "F").lower().startswith("t")
-    if vsc:
-        ctrlrange = mapping.pop("CtrlRange")
-
-    file_str = ""
-    for key, value in mapping.items():
-        file_str += f"{key} = {str(value)}\n"
-    file_str += "@DistanceOfIon\n"
-    file_str += distanceofion + "\n"
-    file_str += "@End\n"
-    if vsc:
-        file_str += "@CtrlRange\n"
-        file_str += ctrlrange + "\n"
-        file_str += "@End\n"
-    (tname / calypso_input_file).write_text(file_str)
-
-    fmax = mapping.get("fmax", 0.01)
-    pstress = mapping.get("PSTRESS", 0)
-    calypso_run_opt_str += f"""
-    if __name__ == '__main__':
-        run_opt({fmax}, {pstress})"""
-    (tname / calypso_run_opt_file).write_text(calypso_run_opt_str)
-    (tname / calypso_check_opt_file).write_text(calypso_check_opt_str)
-    return tname
-
-necessary_keys = {
-    "NumberOfSpecies": "",
-    "NameOfAtoms": "",
-    "AtomicNumber": "",
-    "NumberOfAtoms": "",
-    "PopSize": 30,
-    "MaxStep": 10,
-    "distanceofion": "",
-    # "@DistanceOfIon
-    # "@End
-}
-
-default_key_value = {
-    "SystemName": "CALYPSO",
-    "NumberOfFormula": "1 1",
-    "PSTRESS": "0",
-    "fmax": 0.01,
-    "Volume": 0,
-    "Ialgo": 2,
-    "PsoRatio": 0.6,
-    "ICode": 15,
-    "NumberOfLbest": 4,
-    "NumberOfLocalOptim": 3,
-    "Command": "sh submit.sh",
-    "MaxTime": 9000,
-    "GenType": 1,
-    "PickUp": "F",
-    "PickStep": 3,
-    "Parallel": "F",
-    "LMC": "F",
-    "Split": "T",
-    "SpeSpaceGroup": "2 230",
-    }
+from dpgen2.utils import (
+    set_directory,
+)
 
 vsc_keys = {
     "VSC": "F",
     "MaxNumAtom": 100,
-    "CtrlRange":"",
+    "CtrlRange": "",
     # @CtrlRange
     # @end
 }
@@ -332,6 +184,9 @@ def run_opt(fmax, stress):
             write(f"{idx}.poscar", traj)
             """
 
+calypso_run_opt_str_end = """
+    if __name__ == '__main__':
+        run_opt(%f, %f)"""
 
 calypso_check_opt_str = """#!/usr/bin/env python3
 
@@ -460,3 +315,153 @@ if __name__ == "__main__":
     cwd = os.getcwd()
     if not os.path.exists(os.path.join(cwd,'OUTCAR')):
         check()"""
+
+
+class PrepCalyInput(OP):
+    r"""Prepare the working directories and input file for generating structures.
+
+    A calypso input file will be generated and saved in working
+    directory (defined by `ip["task"]`), according to the
+    given parameters (defined by `ip["caly_input"]`).
+    The paths of the directory will be returned as `op["work_path"]`.
+
+    """
+
+    @classmethod
+    def get_input_sign(cls):
+        return OPIOSign(
+            {
+                "caly_inputs": List[dict],  # calypso input params
+                "models": Artifact(List[Path]),
+            }
+        )
+
+    @classmethod
+    def get_output_sign(cls):
+        return OPIOSign(
+            {
+                "task_names": List[str],
+                "task_paths": Artifact(Path),  # task path containing all structures
+            }
+        )
+
+    @OP.exec_sign_check
+    def execute(
+        self,
+        ip: OPIO,
+    ) -> OPIO:
+        r"""Execute the OP.
+
+        Parameters
+        ----------
+        ip : dict
+            Input dict with components:
+            - `caly_inputs` : (`List[dict]`) Definitions for CALYPSO input file.
+            - `models`: (`Artifact(List[Path])`) The frozen model to estimate the model deviation. The first model with be used to drive structure prediction simulation.
+
+        Returns
+        -------
+        op : dict
+            Output dict with components:
+
+            - `task_names`: (`List[str]`) The name of CALYPSO tasks. Will be used as the identities of the tasks. The names of different tasks are different.
+            - `task_paths`: (`Artifact(List[Path])`) The parepared working paths of the task containing input files (`input.dat` and `calypso_run_opt.py`) needed to generate structures by CALYPSO and make structure optimization with DP model.
+        """
+
+        necessary_keys = {
+            "NumberOfSpecies": "",
+            "NameOfAtoms": "",
+            "AtomicNumber": "",
+            "NumberOfAtoms": "",
+            "PopSize": 30,
+            "MaxStep": 10,
+            "distanceofion": "",
+            # "@DistanceOfIon
+            # "@End
+        }
+
+        default_key_value = {
+            "SystemName": "CALYPSO",
+            "NumberOfFormula": "1 1",
+            "PSTRESS": "0",
+            "fmax": 0.01,
+            "Volume": 0,
+            "Ialgo": 2,
+            "PsoRatio": 0.6,
+            "ICode": 15,
+            "NumberOfLbest": 4,
+            "NumberOfLocalOptim": 3,
+            "Command": "sh submit.sh",
+            "MaxTime": 9000,
+            "GenType": 1,
+            "PickUp": "F",
+            "PickStep": 3,
+            "Parallel": "F",
+            "LMC": "F",
+            "Split": "T",
+            "SpeSpaceGroup": "2 230",
+        }
+
+        models = ip["models"]
+        model_files = [Path(ii).resolve() for ii in models]
+
+        cc = 0
+        task_paths = []
+        caly_inputs = ip["caly_inputs"]
+        for caly_input in caly_inputs:
+            update = caly_input.pop("UpDate", True)
+            if update:
+                for (
+                    key
+                ) in (
+                    necessary_keys.keys()
+                ):  # All necessary keys must be included or raise.
+                    necessary_keys[key] = caly_input.pop(key)
+                default_key_value.update(caly_input)
+                default_key_value.update(necessary_keys)
+            else:
+                default_key_value = caly_input
+
+            tname = Path(calypso_task_pattern % cc)
+            with set_directory(tname):
+                tname = _mk_task_from_dict(default_key_value, cc)
+
+                for idx, mm in enumerate(model_files):
+                    mname = model_name_pattern % (idx)
+                    Path(mname).symlink_to(mm)
+                # -----------------------------------------------------------------
+
+                task_paths.append(tname)
+                cc += 1
+        task_names = [str(ii) for ii in task_paths]
+        return OPIO(
+            {
+                "task_names": task_names,
+                "task_paths": task_paths,
+            }
+        )
+
+
+def _mk_task_from_dict(mapping):
+    distanceofion = mapping.pop("DistanceOfIon")
+    vsc = mapping.pop("VSC", "F").lower().startswith("t")
+    if vsc:
+        ctrlrange = mapping.pop("CtrlRange")
+
+    file_str = ""
+    for key, value in mapping.items():
+        file_str += f"{key} = {str(value)}\n"
+    file_str += "@DistanceOfIon\n"
+    file_str += distanceofion + "\n"
+    file_str += "@End\n"
+    if vsc:
+        file_str += "@CtrlRange\n"
+        file_str += ctrlrange + "\n"
+        file_str += "@End\n"
+    calypso_input_file.write_text(file_str)
+
+    fmax = mapping.get("fmax", 0.01)
+    pstress = mapping.get("PSTRESS", 0)
+    calypso_run_opt_str_end % (fmax, pstress)
+    calypso_run_opt_file.write_text(calypso_run_opt_str + calypso_run_opt_str_end)
+    calypso_check_opt_file.write_text(calypso_check_opt_str)
