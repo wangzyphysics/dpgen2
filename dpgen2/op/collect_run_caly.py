@@ -121,11 +121,11 @@ class RunCalypso(OP):
         # input.dat
         input_file = ip["input_file"].resolve()
         # work_dir name: calypso_task.idx
-        work_dir = ip["task_name"]
+        work_dir = Path(ip["task_name"])
 
-        step = ip["step"]
-        results = ip["results"]
-        opt_results_dir = ip["opt_results_dir"]
+        step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
+        results = ip["results"].resolve() if ip["results"] is not None else ip["results"]
+        opt_results_dir = ip["opt_results_dir"].resolve() if ip["opt_results_dir"] is not None else ip["opt_results_dir"]
 
         with set_directory(work_dir):
             # prep files/dirs from last calypso run
@@ -161,7 +161,7 @@ class RunCalypso(OP):
         ret_dict = {
             "poscar_dir": poscar_dir,
             "task_name": str(work_dir),
-            "input_file": input_file,
+            "input_file": ip["input_file"],
             "step": work_dir.joinpath("step"),
             "results": work_dir.joinpath("results"),
         }

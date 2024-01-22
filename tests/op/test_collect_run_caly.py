@@ -26,8 +26,7 @@ from .context import (
 from dpgen2.constants import (
     calypso_task_pattern,
     calypso_input_file,
-    calypso_run_opt_file,
-    calypso_check_opt_file,
+    calypso_log_name,
 
 )
 from dpgen2.op.collect_run_caly import RunCalypso
@@ -68,18 +67,23 @@ class TestPrepCalyInput(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.input_file_path)
+        shutil.rmtree(Path(self.task_name))
+
 
     @patch("dpgen2.op.collect_run_caly.run_command")
-    def test_success(self, mocked_run):
-        def side_effect():
+    def test_success_00(self, mocked_run):
+        if Path(self.task_name).is_dir():
+            shutil.rmtree(Path(self.task_name))
+
+        def side_effect(*args, **kwargs):
             for i in range(5):
                 Path().joinpath(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
             Path("step").write_text("3")
             Path("results").mkdir(parents=True, exist_ok=True)
-            return [(1, "foo\n", "")]
+            return (0, "foo\n", "")
+
         mocked_run.side_effect = side_effect
         op = RunCalypso()
-        print(self.input_file, type(self.input_file))
         out = op.execute(
             OPIO(
                 {
@@ -94,35 +98,72 @@ class TestPrepCalyInput(unittest.TestCase):
             )
         )
         # check output
-        self.assertEqual(out["poscar_dir"], self.task_name / "poscar_dir")
+        self.assertEqual(out["poscar_dir"], Path("poscar_dir"))
         self.assertEqual(out["task_name"], self.task_name)
         self.assertEqual(out["input_file"], self.input_file)
-        self.assertEqual(out["step"], self.step_file)
-        self.assertEqual(out["results"], self.results_dir)
-        # check files details
-        # self.assertEqual(self.input_dat_list[0].read_text().strip("\n"), self.input_1_ref.strip("\n"))
-        # self.assertEqual(self.input_dat_list[1].read_text().strip("\n"), self.input_2_ref.strip("\n"))
+        self.assertEqual(out["step"], Path(self.task_name) / "step")
+        self.assertEqual(out["results"], Path(self.task_name) / "results")
 
-#     def test_error(self, mocked_run):
-#         mocked_run.side_effect = [(1, "foo\n", "")]
-#         op = RunLmp()
-#         with self.assertRaises(TransientError) as ee:
-#             out = op.execute(
-#                 OPIO(
-#                     {
-#                         "config": {"command": "mylmp"},
-#                         "task_name": self.task_name,
-#                         "task_path": self.task_path,
-#                         "models": self.models,
-#                     }
-#                 )
-#             )
-#         # check call
-#         calls = [
-#             call(
-#                 " ".join(["mylmp", "-i", lmp_input_name, "-log", lmp_log_name]),
-#                 shell=True,
-#             ),
-#         ]
-#         mocked_run.assert_has_calls(calls)
-# 
+    @patch("dpgen2.op.collect_run_caly.run_command")
+    def test_success_01(self, mocked_run):
+        if Path(self.task_name).is_dir():
+            shutil.rmtree(Path(self.task_name))
+
+        def side_effect(*args, **kwargs):
+            for i in range(5):
+                Path().joinpath(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
+            Path("step").write_text("3")
+            Path("results").mkdir(parents=True, exist_ok=True)
+            return (0, "foo\n", "")
+
+        mocked_run.side_effect = side_effect
+        op = RunCalypso()
+        out = op.execute(
+            OPIO(
+                {
+                    "config": {"run_calypso_command": "echo 1"},
+                    "task_name": calypso_task_pattern % 0,
+                    "input_file": self.input_file,
+                    "step": self.step_file,
+                    "results": self.results_dir,
+                    "opt_results_dir": self.opt_results_dir,
+
+                }
+            )
+        )
+        # check output
+        self.assertEqual(out["poscar_dir"], Path("poscar_dir"))
+        self.assertEqual(out["task_name"], self.task_name)
+        self.assertEqual(out["input_file"], self.input_file)
+        self.assertEqual(out["step"], Path(self.task_name) / "step")
+        self.assertEqual(out["results"], Path(self.task_name) / "results")
+
+    @patch("dpgen2.op.collect_run_caly.run_command")
+    def test_error_02(self, mocked_run):
+        if Path(self.task_name).is_dir():
+            shutil.rmtree(Path(self.task_name))
+
+        def side_effect(*args, **kwargs):
+            for i in range(5):
+                Path().joinpath(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
+            Path("step").write_text("3")
+            Path("results").mkdir(parents=True, exist_ok=True)
+            return (1, "foo\n", "")
+
+        mocked_run.side_effect = side_effect
+        op = RunCalypso()
+        self.assertRaises(
+            TransientError,
+            op.execute,
+            OPIO(
+                {
+                    "config": {"run_calypso_command": "echo 1"},
+                    "task_name": calypso_task_pattern % 0,
+                    "input_file": self.input_file,
+                    "step": None,
+                    "results": None,
+                    "opt_results_dir": None,
+
+                }
+            )
+        )
