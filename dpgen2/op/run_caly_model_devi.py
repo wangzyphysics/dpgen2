@@ -1,10 +1,11 @@
 import numpy as np
-from deepmd.infer import calc_model_devi
-from deepmd.calculator import DP
 
 from ase import Atoms
-from ase.io import Trajectory
+from ase.io import read, write
 from ase.geometry import cellpar_to_cell
+
+from deepmd.infer import calc_model_devi
+from deepmd.calculator import DP
 from pathlib import (
     Path,
 )
@@ -37,8 +38,10 @@ class RunCalyModelDevi(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
+                "type_map": List[str],
                 "task_name": str,
                 "traj_dirs": Artifact(List[Path]),
+                "models": Artifact(List[Path]),
             }
         )
 
@@ -75,6 +78,7 @@ class RunCalyModelDevi(OP):
             - `model_devi`: (`Artifact(Path)`) The model deviation. The order of recorded model deviations should be consistent with the order of frames in `traj`.
 
         """
+        type_map = ip["type_map"]
 
         models = ip["models"]
         all_models = [model.resolve() for model in models]
@@ -85,18 +89,22 @@ class RunCalyModelDevi(OP):
         traj_dirs = ip["traj_dirs"]
         traj_dirs = [traj_dir.resolve() for traj_dir in traj_dirs]
 
-        dump_file = work_dir.joinpath("traj.dump")
-        model_devi_file = work_dir.joinpath("model_devi.out")
+        dump_file_name = "traj.dump"
+        model_devi_file_name = "model_devi.out"
 
         Devis = []
         tcount = 0
         with set_directory(work_dir):
+            dump_file = Path().joinpath(dump_file_name)
+            model_devi_file = Path().joinpath(model_devi_file_name)
             f = open(dump_file, "a")
             for traj_dir in traj_dirs:
                 for traj_name in traj_dir.rglob("*.traj"):
                     atoms_list = parse_traj(traj_name)
+                    if atoms_list is None:
+                        continue
                     for atoms in atoms_list:
-                        dump_str = atoms2lmpdump(atoms)
+                        dump_str = atoms2lmpdump(atoms, tcount, type_map)
                         f.write(dump_str)
                         pbc = np.all(atoms.get_pbc())
                         coord = atoms.get_positions().reshape(1, -1)
@@ -139,7 +147,7 @@ def atoms2lmpdump(atoms, struc_idx, type_map):
     dump_str += "ITEM: NUMBER OF ATOMS\n"
     dump_str += f"{atoms.get_global_number_of_atoms()}\n"
 
-    cellpars = atoms.cell.cellpars()
+    cellpars = atoms.cell.cellpar()
     new_cell = cellpar_to_cell(cellpars)
     new_atoms = Atoms(
         numbers=atoms.numbers,
@@ -178,7 +186,7 @@ def atoms2lmpdump(atoms, struc_idx, type_map):
 
 def parse_traj(traj_file) -> None | List[Atoms]:
     # optimization will at least return one structures in traj file
-    trajs = Trajectory(traj_file)
+    trajs = read(traj_file, index=":", format="traj")
 
     numb_traj = len(trajs)
     assert numb_traj >= 1, "traj file is broken."
@@ -210,7 +218,7 @@ def parse_traj(traj_file) -> None | List[Atoms]:
 
 
 def write_model_devi_out(devi: np.ndarray, fname: str, header: str = ""):
-    assert devi.shape[1] == 8
+    assert devi.shape[1] == 7
     header = "%s\n%10s" % (header, "step")
     for item in "vf":
         header += "%19s%19s%19s" % (
