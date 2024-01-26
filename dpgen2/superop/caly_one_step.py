@@ -25,6 +25,7 @@ from dflow import (
     argo_len,
     argo_range,
     argo_sequence,
+    if_expression,
     download_artifact,
     upload_artifact,
 )
@@ -50,27 +51,28 @@ class CalyOneStep(Steps):
     def __init__(
         self,
         name: str,
-        prep_dp_optim: Type[OP],
-        run_dp_optim: Type[OP],
-        prep_caly_nextstep: Type[OP],
+        prep_caly_input: Type[OP],
+        collect_run_caly: Type[OP],
+        prep_run_dp_optim: Type[OP],
+        # caly_run_model_devi: Type[OP],
         prep_config: dict = normalize_step_dict({}),
         run_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
         self._input_parameters = {
             "block_id": InputParameter(type=str, value=""),
-            "caly_inputs": InputParameter(),
-            "caly_structure_path_names": InputParameter(),
-            "input_file_path_names": InputParameter(),
+            "caly_inputs": InputParameter(type=dict),
         }
         self._input_artifacts = {
+            "models": InputArtifact(),
         }
         self._output_parameters = {
-            "structure_paths": OutputParameter(),
+            "task_names": OutputParameter(),
         }
         self._output_artifacts = {
-            "traj_paths": OutputArtifact(),
+            "traj_results": OutputArtifact(),
         }
+        print("in calyonestep init method", self._input_parameters)
 
         super().__init__(
             name=name,
@@ -83,28 +85,28 @@ class CalyOneStep(Steps):
                 artifacts=self._output_artifacts,
             ),
         )
+        print("in calyonestep after super init method", self.inputs)
 
-        self._keys = ["prep-dp-optim", "run-dp-optim", "prep-caly-nextstep"]
+        # TODO: RunModelDevi
+        self._keys = ["prep-caly-input", "collect-run-calypso", "prep-run-dp-optim"]
         self.step_keys = {}
-        ii = "prep-dp-optim"
-        self.step_keys[ii] = "--".join(
-            ["%s" % self.inputs.parameters["block_id"], ii + "-{{item}}"]
-        )
-        ii = "run-dp-optim"
-        self.step_keys[ii] = "--".join(
-            ["%s" % self.inputs.parameters["block_id"], ii + "-{{item}}"]
-        )
-        ii = "prep-caly-nextstep"
-        self.step_keys[ii] = "--".join(
-            ["%s" % self.inputs.parameters["block_id"], ii + "-{{item}}"]
-        )
+        ii = "prep-caly-input"
+        self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
+        ii = "collect-run-calypso"
+        self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
+        ii = "prep-run-dp-optim"
+        self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
+        # ii = "caly-run-model-devi"
+        # self.step_keys[ii] = "--".join(
+        #     ["%s" % self.inputs.parameters["block_id"], ii + "-{{item}}"]
+        # )
 
         self = _caly_one_step(
             self,
             self.step_keys,
-            prep_dp_optim,
-            run_dp_optim,
-            prep_caly_nextstep,
+            prep_caly_input,
+            collect_run_caly,
+            prep_run_dp_optim,
             prep_config=prep_config,
             run_config=run_config,
             upload_python_packages=upload_python_packages,
@@ -134,9 +136,9 @@ class CalyOneStep(Steps):
 def _caly_one_step(
     caly_one_step_steps,
     step_keys,
-    prep_dp_optim_op: Type[OP],
-    run_dp_optim_op: Type[OP],
-    prep_caly_nextstep_op: Type[OP],
+    prep_caly_input_op: Type[OP],
+    collect_run_calypso_op: Type[OP],
+    prep_run_dp_optim_op: Type[OP],
     prep_config: dict = normalize_step_dict({}),
     run_config: dict = normalize_step_dict({}),
     upload_python_packages: Optional[List[os.PathLike]] = None,
@@ -145,119 +147,92 @@ def _caly_one_step(
     run_config = deepcopy(run_config)
     prep_template_config = prep_config.pop("template_config")
     run_template_config = run_config.pop("template_config")
-    prep_executor = init_executor(prep_config.pop("executor"))  # e.g. cpu
-    run_executor = init_executor(run_config.pop("executor"))  # e.g. gpu
+    prep_executor = init_executor(prep_config.pop("executor"))
+    run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})
 
-    prep_dp_optim = Step(
-        "prep-dp-optim",
+    print(caly_one_step_steps.inputs.parameters)
+    # write input.dat
+    prep_caly_input = Step(
+        "prep-caly-input",
         template=PythonOPTemplate(
-            prep_dp_optim_op,
-            slices=Slices(
-                "{{item}}",  # caly_task.{int}
-                input_parameter=[
-                    "caly_input",
-                    "caly_structure_path_name",
-                    "input_file_path_name",
-                ],
-                input_artifact=[],
-                output_artifact=[
-                    "optim_names",
-                    "optim_paths",
-                ],  # results will be aggregrated into list[optim_names], where optim_names is List[str]
-                **template_slice_config,
-            ),
+            prep_caly_input_op,
+            output_artifact_archive={},
             python_packages=upload_python_packages,
-            **run_template_config,
+            **prep_template_config,
         ),
         parameters={
-            # popsize can be obtained from caly_input dict
-            "caly_input": caly_one_step_steps.inputs.parameters[
-                "caly_inputs"
-            ],  # list of caly_input(dict)
-            # structures are stroing in caly_structure_path_name direcoty
-            "caly_structure_path_name": caly_one_step_steps.inputs.parameters[
-                "caly_structure_path_names"
-            ],
-            # model_file, calypso_run_opt_script and calypso_check_opt_script are stroing in input_file_path_name
-            "input_file_path_name": caly_one_step_steps.inputs.parameters[
-                "input_file_path_names"
-            ],
+            "caly_inputs": caly_one_step_steps.inputs.parameters["caly_inputs"],
         },
-        artifacts={},
-        key=step_keys["prep-dp-optim"],
+        key=step_keys["prep-caly-input"],
         executor=prep_executor,
         **prep_config,
     )
-    caly_one_step_steps.add(prep_dp_optim)
+    caly_one_step_steps.add(prep_caly_input)
+    print(f"prep_caly_input output: {prep_caly_input.outputs.parameters}")
 
-    run_dp_optim = Step(
-        "run-dp-optim",
+    # collect the last step files and run calypso.x to generate structures
+    collect_run_calypso = Step(
+        "collect-run-calypso",
         template=PythonOPTemplate(
-            run_dp_optim_op,
+            collect_run_calypso_op,
             slices=Slices(
-                "{{item}}",  # caly_task.{int}/caly_pop.{int}
-                input_parameter=["optim_name"],
-                input_artifact=["optim_path"],
-                # not sure whether return a path or every needed file.
-                # output_artifact=["log", "traj", "POSCAR", "CONTCAR", "OUTCAR", "work_dir", "work_name"],
-                output_parameter=[
-                    "work_name"
-                ],  # aggregrated into List[work_name], where work_name is like caly_task.{idx}/caly_pop.{idx}
-                output_artifact=["work_dir"],
+                "{{item}}",  # caly_task.int
+                input_parameter=["config", "task_name"],  # command
+                input_artifact=[
+                    "input_file",
+                    "step",
+                    "results",
+                    "opt_results_dir",
+                ],  # command
+                output_parameter=["task_name"],  # str(caly_task.int)
+                output_artifact=[
+                    "poscar_dir",
+                    "input_file",
+                    "results",
+                    "step",
+                ],  # caly.log, caly_task.int
                 **template_slice_config,
             ),
             python_packages=upload_python_packages,
             **run_template_config,
         ),
         parameters={
-            "config": caly_one_step_steps.inputs.parameters["caly_config"],
-            "optim_name": prep_dp_optim.outputs.parameters["optim_names"],
+            "config": run_template_config,
+            "task_name": prep_caly_input.outputs.parameters["task_names"],
         },
         artifacts={
-            "optim_path": prep_dp_optim.outputs.parameters["optim_paths"],
+            "input_file": prep_caly_input.outputs.artifacts["input_dat_files"],
+            "step": prep_run_dp_optim.outputs.artifacts["step"],
+            "results": prep_run_dp_optim.outputs.artifacts["results"],
+            "opt_results_dir": prep_run_dp_optim.outputs.artifacts["opt_results_dir"],
         },
         with_sequence=argo_sequence(
-            argo_len(prep_dp_optim.outputs.parameters["optim_names"]),
+            argo_len(prep_caly_input.outputs.parameters["task_names"]),
             format=calypso_index_pattern,
         ),
-        key=step_keys["run-dp-optim"],
-        executor=run_executor,
+        key=step_keys["collect-run-calypso"],
+        executor=prep_executor,
         **run_config,
     )
-    caly_one_step_steps.add(run_dp_optim)
+    caly_one_step_steps.add(collect_run_calypso)
 
-    def aggregrate_optim_names(run_calypso_paths, dp_optim_paths):
-        """after the run_dp_optim task done, all structures from different
-        input.dat will mixed together, we have to group up the structures
-        from same input.dat. As the dp_optim_paths are like ["caly_task.idx/caly_pop.idx"],
-        which can be divided by caly_task.idx.
-        """
-        from collections import defaultdict
-
-        d = defaultdict(list)
-        for dir_name in dp_optim_paths:
-            d[str(dir_name.parts[-2])].append(dir_name)
-        return [d[str(each_dir)] for each_dir in run_calypso_paths]
-
-    prep_caly_nextstep = Step(
-        "prep-caly-nextstep",
+    # prep_run_dp_optim
+    prep_run_dp_optim = Step(
+        "prep-run-dp-optim",
         template=PythonOPTemplate(
-            prep_caly_nextstep_op,
+            prep_run_dp_optim_op,
             slices=Slices(
-                "{{item}}",
-                input_parameter=[
-                    "caly_input",
-                    "run_calypso_name",
-                    "run_dp_optim_names",
+                "{{item}}",  # caly_task.int
+                input_parameter=["config", "task_name"],
+                input_artifact=[
+                    "poscar_dir",
+                    "models_dir",
+                    "caly_run_opt_file",
+                    "caly_check_opt_file",
                 ],
-                input_artifact=[],
-                # input_artifact=["optim_path"],
-                # not sure whether return a path or every needed file.
-                output_parameter=[
-                    "structures_path_name", "finished"
-                ],  # aggregrated into List[work_name], where work_name is like caly_task.{idx}/caly_pop.{idx}
-                output_artifact=["structures_path", "log"],
+                output_parameter=[],
+                output_artifact=["optim_results_dir", "traj_results_dir"],
                 **template_slice_config,
             ),
             python_packages=upload_python_packages,
@@ -265,64 +240,50 @@ def _caly_one_step(
         ),
         parameters={
             "config": caly_one_step_steps.inputs.parameters["config"],
-            "caly_input": caly_one_step_steps.inputs.parameters["caly_configs"],
-            "run_calypso_name": caly_one_step_steps.inputs.parameters[
-                "caly_structure_path_names"
-            ],
-            "run_dp_optim_names": aggregrate_optim_names(
-                caly_one_step_steps.inputs.parameters["caly_structure_path_names"],
-                run_dp_optim.outputs.parameters["work_name"],
-            ),
+            "task_name": prep_caly_input.outputs.parameters["task_name"],
         },
         artifacts={
+            "poscar_dir": collect_run_calypso.outputs.artifacts["poscar_dir"],
+            "models_dir": caly_one_step_steps.inputs.artifacts["models"],
+            "caly_run_opt_file": prep_caly_input.outputs.artifacts[
+                "caly_run_opt_files"
+            ],
+            "caly_check_opt_file": prep_caly_input.outputs.artifacts[
+                "caly_check_opt_files"
+            ],
         },
-        with_sequence=argo_sequence(
-            argo_len(prep_dp_optim.outputs.parameters["optim_names"]),
-            format=calypso_index_pattern,
-        ),
-        key=step_keys["prep-caly-nextstep"],
-        executor=prep_executor,
+        key=step_keys["prep-run-dp-optim"],
+        executor=prep_executor,  # cpu is enough to run calypso.x, default step config is c2m4
         **run_config,
     )
-    caly_one_step_steps.add(prep_caly_nextstep)
-
-    # caly_one_step_steps.outputs.artifacts[
-    #     "traj_paths"
-    # ]._from = run_dp_optim.outputs.artifacts["work_name"]
-    # caly_one_step_steps.outputs.artifacts[
-    #     "structure_paths"
-    # ]._from = prep_caly_nextstep.outputs.artifacts["structure_path_name"]
-    # return caly_one_step_steps
+    caly_one_step_steps.add(prep_run_dp_optim)
 
     name = "calypso-nextstep-block"
     next_step = Step(
-        name=name + "-next",
+        name=name + "-nextstep",
         template=caly_one_step_steps,
         parameters={
             "block_id": caly_one_step_steps.inputs.parameters["block_id"],
             "caly_inputs": caly_one_step_steps.inputs.parameters["caly_inputs"],
-            "caly_structure_path_names": prep_caly_nextstep.outputs.parameters["caly_structure_path_names"],
-            "input_file_path_names": prep_caly_nextstep.outputs.parameters["input_file_path_names"],
         },
-        artifacts={
-        },
-        when="%s == false" % (prep_caly_nextstep.outputs.parameters["finished"]),
+        artifacts={"models": caly_one_step_steps.inputs.artifacts["models"]},
+        when="%s == false" % (collect_run_calypso.outputs.parameters["finished"]),
     )
     caly_one_step_steps.add(next_step)
 
     caly_one_step_steps.outputs.parameters[
-        "traj_paths"
+        "task_names"
     ].value_from_expression = if_expression(
-        _if=(prep_caly_nextstep.outputs.parameters["finished"] == True),
-        _then=run_dp_optim.outputs.parameters["work_name"],
-        _else=next_step.outputs.parameters["work_name"],
+        _if=(collect_run_calypso.outputs.parameters["finished"] == True),
+        _then=prep_run_dp_optim.outputs.parameters["task_name"],
+        _else=next_step.outputs.parameters["task_name"],
     )
-    caly_one_step_steps.outputs.parameters[
-        "structure_paths"
+    caly_one_step_steps.outputs.artifacts[
+        "traj_results_dir"
     ].value_from_expression = if_expression(
-        _if=(prep_caly_nextstep.outputs.parameters["finished"] == True),
-        _then=prep_caly_nextstep.outputs.parameters["structure_path_name"],
-        _else=next_step.outputs.parameters["structure_path_name"],
+        _if=(collect_run_calypso.outputs.parameters["finished"] == True),
+        _then=prep_run_dp_optim.outputs.parameters["traj_results_dir"],
+        _else=next_step.outputs.parameters["traj_results_dir"],
     )
 
     return caly_one_step_steps
