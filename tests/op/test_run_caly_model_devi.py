@@ -32,7 +32,6 @@ from dpgen2.constants import (
     calypso_log_name,
 
 )
-from dpgen2.op.collect_run_caly import RunCalypso
 from dpgen2.utils import (
     BinaryFileInput,
 )

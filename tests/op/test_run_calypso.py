@@ -29,7 +29,7 @@ from dpgen2.constants import (
     calypso_log_name,
 
 )
-from dpgen2.op.collect_run_caly import CollRunCaly
+from dpgen2.op.run_calypso import RunCalypso
 from dpgen2.utils import (
     BinaryFileInput,
 )
@@ -37,7 +37,7 @@ from dpgen2.utils import (
 # isort: on
 
 
-class TestCollRunCaly(unittest.TestCase):
+class TestRunCalypso(unittest.TestCase):
     def setUp(self):
         self.config_1 = {"run_calypso_command": "echo 1"}
         self.config_2 = {"run_calypso_command": None}
@@ -47,29 +47,13 @@ class TestCollRunCaly(unittest.TestCase):
         self.input_file = self.input_file_path.joinpath(calypso_input_file)
         self.input_file.write_text("input.dat")
 
-        self.step_file = self.input_file_path.joinpath("step")
-        self.step_file.write_text("3")
-
-        self.results_dir = self.input_file_path.joinpath("results")
-        self.results_dir.mkdir(exist_ok=True, parents=True)
-        self.results_dir.joinpath("CALYPSO.log").write_text("CALYPSO.log")
-        self.results_dir.joinpath("pso_ini_1").write_text("pso_ini_1")
-        self.results_dir.joinpath("pso_opt_1").write_text("pso_opt_1")
-        self.results_dir.joinpath("pso_sor_1").write_text("pso_sor_1")
-
-        self.opt_results_dir = self.input_file_path.joinpath("opt_results_dir")
-        self.opt_results_dir.mkdir(exist_ok=True, parents=True)
-        self.opt_results_dir.joinpath("POSCAR_1").write_text("POSCAR_1")
-        self.opt_results_dir.joinpath("OUTCAR_1").write_text("OUTCAR_1")
-        self.opt_results_dir.joinpath("CONTCAR_1").write_text("CONTCAR_1")
-
         self.task_name = calypso_task_pattern % 0
 
     def tearDown(self):
         shutil.rmtree(self.input_file_path)
         shutil.rmtree(Path(self.task_name))
 
-    @patch("dpgen2.op.collect_run_caly.run_command")
+    @patch("dpgen2.op.run_calypso.run_command")
     def test_success_00(self, mocked_run):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
@@ -82,17 +66,13 @@ class TestCollRunCaly(unittest.TestCase):
             return (0, "foo\n", "")
 
         mocked_run.side_effect = side_effect
-        op = CollRunCaly()
+        op = RunCalypso()
         out = op.execute(
             OPIO(
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
                     "input_file": self.input_file,
-                    "step": self.step_file,
-                    "results": self.results_dir,
-                    "opt_results_dir": self.opt_results_dir,
-
                 }
             )
         )
@@ -103,7 +83,7 @@ class TestCollRunCaly(unittest.TestCase):
         self.assertEqual(out["step"], Path(self.task_name) / "step")
         self.assertEqual(out["results"], Path(self.task_name) / "results")
 
-    @patch("dpgen2.op.collect_run_caly.run_command")
+    @patch("dpgen2.op.run_calypso.run_command")
     def test_error_01(self, mocked_run):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
@@ -116,7 +96,7 @@ class TestCollRunCaly(unittest.TestCase):
             return (1, "foo\n", "")
 
         mocked_run.side_effect = side_effect
-        op = CollRunCaly()
+        op = RunCalypso()
         self.assertRaises(
             TransientError,
             op.execute,
@@ -125,10 +105,6 @@ class TestCollRunCaly(unittest.TestCase):
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
                     "input_file": self.input_file,
-                    "step": self.step_file,
-                    "results": self.results_dir,
-                    "opt_results_dir": self.opt_results_dir,
-
                 }
             )
         )

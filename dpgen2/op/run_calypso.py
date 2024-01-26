@@ -42,7 +42,7 @@ from dpgen2.utils.run_command import (
 )
 
 
-class CollRunCaly(OP):
+class RunCalypso(OP):
     r"""Execute CALYPSO to generate structures in work_dir.
 
     Changing the work directory into `task_name`. All input files
@@ -60,11 +60,6 @@ class CollRunCaly(OP):
                 "config": BigParameter(dict),  # for command
                 "task_name": BigParameter(str),  # calypso_task.idx
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
-                "step": Artifact(Path),  # step file
-                "results": Artifact(Path),  # dir named results for evo
-                "opt_results_dir": Artifact(
-                    Path
-                ),  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
 
@@ -96,10 +91,6 @@ class CollRunCaly(OP):
             - `task_name`: (`str`) The name of the task (calypso_task.{idx}).
             - `input_file`: (`Path`) The input file of the task (input.dat).
 
-            - `step`: (`Path`) The step file from last calypso run
-            - `results`: (`Path`) The results dir from last calypso run
-            - `opt_results_dir`: (`Path`) The results dir contains POSCAR* CONTCAR* OUTCAR* from last calypso run
-
         Returns
         -------
         Any
@@ -118,26 +109,14 @@ class CollRunCaly(OP):
         """
         # command
         config = ip["config"] if ip["config"] is not None else {}
-        config = CollRunCaly.normalize_config(config)
+        config = RunCalypso.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
         # input.dat
         input_file = ip["input_file"].resolve()
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
 
-        step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
-        results = (
-            ip["results"].resolve() if ip["results"] is not None else ip["results"]
-        )
-        opt_results_dir = (
-            ip["opt_results_dir"].resolve()
-            if ip["opt_results_dir"] is not None
-            else ip["opt_results_dir"]
-        )
-
         with set_directory(work_dir):
-            # prep files/dirs from last calypso run
-            prep_last_calypso_file(step, results, opt_results_dir)
             # copy input.dat
             Path(input_file.name).symlink_to(input_file)
             # run calypso
@@ -180,29 +159,16 @@ class CollRunCaly(OP):
     def calypso_args():
         doc_calypso_cmd = "The command of calypso (absolute path of calypso.x)."
         return [
-            Argument(
-                "run_calypso_command",
-                str,
-                optional=True,
-                default="calypso.x",
-                doc=doc_calypso_cmd,
-            ),
+            Argument("run_calypso_command", str, optional=True, default="calypso.x", doc=doc_calypso_cmd),
         ]
 
     @staticmethod
     def normalize_config(data={}):
-        ta = CollRunCaly.calypso_args()
+        ta = RunCalypso.calypso_args()
         base = Argument("base", dict, ta)
         data = base.normalize_value(data, trim_pattern="_*")
         base.check_value(data, strict=True)
         return data
 
 
-config_args = CollRunCaly.calypso_args
-
-
-def prep_last_calypso_file(step, results, opt_results_dir):
-    Path(step.name).symlink_to(step)
-    Path(results.name).symlink_to(results)
-    for file_name in opt_results_dir.iterdir():
-        Path(file_name.name).symlink_to(file_name)
+config_args = RunCalypso.calypso_args

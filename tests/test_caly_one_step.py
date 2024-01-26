@@ -76,13 +76,13 @@ from dpgen2.op.prep_caly_input import (
     PrepCalyInput,
 )
 from dpgen2.op.collect_run_caly import (
-    RunCalypso,
+    CollRunCaly,
 )
 from dpgen2.op.prep_run_dp_optim import (
     PrepRunDPOptim,
 )
-from dpgen2.superop.caly_one_step import (
-    CalyOneStep,
+from dpgen2.dpgen2.superop.caly_evo_step import (
+    CalyEvoStep,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
 
@@ -131,7 +131,7 @@ def _prep_caly_input():
     return out
 
 
-class MockedRunCalypso(RunCalypso):
+class MockedRunCalypso(CollRunCaly):
     @OP.exec_sign_check
     def execute(
         self,
@@ -289,7 +289,7 @@ class TestCalyOneStep(unittest.TestCase):
         os.chdir(cwd)
 
     def test(self):
-        steps = CalyOneStep(
+        steps = CalyEvoStep(
             "caly-one-step",
             PrepCalyInput,
             MockedRunCalypso,

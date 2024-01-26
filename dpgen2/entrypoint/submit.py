@@ -101,7 +101,7 @@ from dpgen2.superop import (
     PrepRunFp,
     PrepRunLmp,
     PrepRunCaly,
-    CalyOneStep,
+    CalyOneRun,
 )
 from dpgen2.utils import (
     BinaryFileInput,
@@ -165,7 +165,7 @@ def make_concurrent_learning_op(
     elif explore_style == "calypso":
         prep_run_explore_op = PrepRunCaly(
             "prep-run-calypso",
-            caly_one_step=CalyOneStep,
+            caly_one_step=CalyOneRun,
             run_caly_model_devi=RunCalyModelDevi,
             prep_config=prep_explore_config,
             run_config=run_explore_config,

@@ -51,10 +51,10 @@ class PrepRunDPOptim(OP):
             {
                 "config": BigParameter(dict),
                 "task_name": str,  # calypso_task.idx
-                "poscar_dir": Artifact(Path),  # the directory where the structures are in
-                "models_dir": Artifact(Path),  # the directory where the models are in
-                "caly_run_opt_file": Artifact(Path),
-                "caly_check_opt_file": Artifact(Path),
+                "poscar_dir": Artifact(Path),  # from run_calypso first, then from collect_run_caly
+                "models_dir": Artifact(Path),  #
+                "caly_run_opt_file": Artifact(Path),  # from prep_caly_input
+                "caly_check_opt_file": Artifact(Path),  # from prep_caly_input
             }
         )
 

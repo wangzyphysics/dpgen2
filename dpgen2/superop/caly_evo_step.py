@@ -47,14 +47,12 @@ from dpgen2.utils.step_config import (
 from dpgen2.utils.step_config import normalize as normalize_step_dict
 
 
-class CalyOneStep(Steps):
+class CalyEvoStep(Steps):
     def __init__(
         self,
         name: str,
-        prep_caly_input: Type[OP],
-        collect_run_caly: Type[OP],
         prep_run_dp_optim: Type[OP],
-        # caly_run_model_devi: Type[OP],
+        collect_run_caly: Type[OP],
         prep_config: dict = normalize_step_dict({}),
         run_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
@@ -104,7 +102,6 @@ class CalyOneStep(Steps):
         self = _caly_one_step(
             self,
             self.step_keys,
-            prep_caly_input,
             collect_run_caly,
             prep_run_dp_optim,
             prep_config=prep_config,

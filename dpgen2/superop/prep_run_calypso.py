@@ -51,7 +51,8 @@ class PrepRunCaly(Steps):
     def __init__(
         self,
         name: str,
-        caly_one_step: Type[OP],
+        prep_caly_input: Type[OP],
+        caly_evo_step: Type[OP],
         run_caly_model_devi: Type[OP],
         prep_config: dict = normalize_step_dict({}),
         run_config: dict = normalize_step_dict({}),
