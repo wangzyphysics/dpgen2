@@ -49,6 +49,7 @@ class RunCalyModelDevi(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
+                "task_name": str,
                 "traj": Artifact(Path),
                 "model_devi": Artifact(Path),
             }
@@ -74,6 +75,7 @@ class RunCalyModelDevi(OP):
         -------
         Any
             Output dict with components:
+            - `task_name`: (`str`) The name of task.
             - `traj`: (`Artifact(Path)`) The output trajectory.
             - `model_devi`: (`Artifact(Path)`) The model deviation. The order of recorded model deviations should be consistent with the order of frames in `traj`.
 
@@ -119,6 +121,7 @@ class RunCalyModelDevi(OP):
             write_model_devi_out(Devis, model_devi_file)
 
         ret_dict = {
+            "task_name": str(work_dir),
             "traj": dump_file,
             "model_devi": model_devi_file,
         }

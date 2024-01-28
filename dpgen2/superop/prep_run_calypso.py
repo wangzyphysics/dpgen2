@@ -60,7 +60,6 @@ class PrepRunCaly(Steps):
     ):
         self._input_parameters = {
             "block_id": InputParameter(type=str, value=""),
-            "caly_inputs": InputParameter(),
         }
         self._input_artifacts = {
             "models": InputArtifact(),
@@ -69,7 +68,8 @@ class PrepRunCaly(Steps):
             "task_names": OutputParameter(),
         }
         self._output_artifacts = {
-            "traj_results": OutputArtifact(),
+            "trajs": OutputArtifact(),
+            "model_devis": OutputArtifact(),
         }
 
         super().__init__(
@@ -85,9 +85,11 @@ class PrepRunCaly(Steps):
         )
 
         # TODO: RunModelDevi
-        self._keys = ["caly-one-step", "run-caly-model-devi"]
+        self._keys = ["prep-caly-input", "caly-evo-step", "run-caly-model-devi"]
         self.step_keys = {}
-        ii = "caly-one-step"
+        ii = "prep-caly-input"
+        self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
+        ii = "caly-evo-step"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
         ii = "run-caly-model-devi"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
@@ -95,7 +97,8 @@ class PrepRunCaly(Steps):
         self = _prep_run_caly(
             self,
             self.step_keys,
-            caly_one_step,
+            prep_caly_input,
+            caly_evo_step,
             run_caly_model_devi,
             prep_config=prep_config,
             run_config=run_config,
@@ -126,6 +129,7 @@ class PrepRunCaly(Steps):
 def _prep_run_caly(
     prep_run_caly_steps,
     step_keys,
+    prep_caly_input_op: Type[OP],
     caly_one_step_op: Type[OP],
     run_caly_model_devi_op: Type[OP],
     prep_config: dict = normalize_step_dict({}),
@@ -140,38 +144,64 @@ def _prep_run_caly(
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})
 
-    print(prep_run_caly_steps.inputs.parameters["block_id"])
-    # collect traj dirs
-    caly_one_step = Step(
-        "caly-one-step",
-        template=caly_one_step_op,
+    # prep caly input files
+    prep_caly_input = Step(
+        "prep-caly-input",
+        template=prep_caly_input_op,
         parameters={
-            "block_id": prep_run_caly_steps.inputs.parameters["block_id"],
-            "caly_inputs": prep_run_caly_steps.inputs.parameters["caly_inputs"],
+            "caly_inputs": run_template_config["caly_inputs"],
         },
         artifacts={},
-        key=step_keys["caly-one-step"],
+        key=step_keys["prep-caly-input"],
         executor=prep_executor,
         **prep_config,
     )
-    prep_run_caly_steps.add(caly_one_step)
+    prep_run_caly_steps.add(prep_caly_input)
+
+    temp_value = [None for _ in range(len(prep_caly_input.outputs.artifacts["input_dat_files"]))]
+    # collect traj dirs
+    caly_evo_step = Step(
+        "caly-evo-step",
+        template=caly_one_step_op,
+        parameters={
+            "block_id": prep_run_caly_steps.inputs.parameters["block_id"],
+            "task_name_list": prep_caly_input.outputs.parameters["task_names"],
+
+        },
+        artifacts={
+            "models": prep_run_caly_steps.inputs.artifacts["models"],
+            "input_file_list": prep_caly_input.outputs.artifacts["input_dat_files"],
+            "caly_run_opt_files": prep_caly_input.outputs.artifacts["caly_run_opt_files"],
+            "caly_check_opt_files": prep_caly_input.outputs.artifacts["caly_check_opt_files"],
+            "results_list": temp_value,
+            "step_list": temp_value,
+            "opt_results_dir_list": temp_value,
+        },
+        key=step_keys["caly-evo-step"],
+        executor=prep_executor,
+        **prep_config,
+    )
+    prep_run_caly_steps.add(caly_evo_step)
 
     # run model devi
     run_caly_model_devi = Step(
         "run-caly-model-devi",
         template=run_caly_model_devi_op,
         parameters={
-            "type_map": prep_run_caly_steps.inputs.parameters["caly_inputs"],
-            "task_name": prep_run_caly_steps.inputs.parameters["block_id"],
-            "traj_dirs": prep_run_caly_steps.inputs.parameters["block_id"],
-            "models": prep_run_caly_steps.inputs.parameters["block_id"],
+            "type_map": run_template_config["inputs"]["type_map"],
+            "task_name": caly_evo_step.outputs.artifacts["task_names"],
+            "traj_dirs": caly_evo_step.outputs.artifacts["traj_results"],
+            "models": prep_run_caly_steps.inputs.artifacts["models"],
         },
-        key=step_keys["prep-caly-input"],
+        key=step_keys["run-caly-model-devi"],
         executor=prep_executor,
         **prep_config,
     )
-    prep_run_caly_steps.add(caly_one_step)
+    prep_run_caly_steps.add(run_caly_model_devi)
 
+    prep_run_caly_steps.outputs.parameters[
+        "task_names"
+    ]._value_from_parameter = run_caly_model_devi.outputs.parameters["task_name"]
     prep_run_caly_steps.outputs.artifacts[
         "trajs"
     ]._from = run_caly_model_devi.outputs.artifacts["traj"]

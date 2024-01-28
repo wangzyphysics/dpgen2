@@ -29,7 +29,7 @@ from dpgen2.constants import (
     calypso_log_name,
 
 )
-from dpgen2.op.collect_run_caly import CollRunCaly
+from dpgen2.op.collect_run_caly import CollRunCaly, get_max_step
 from dpgen2.utils import (
     BinaryFileInput,
 )
@@ -45,7 +45,7 @@ class TestCollRunCaly(unittest.TestCase):
         self.input_file_path = Path("input_file")
         self.input_file_path.mkdir(parents=True, exist_ok=True)
         self.input_file = self.input_file_path.joinpath(calypso_input_file)
-        self.input_file.write_text("input.dat")
+        self.input_file.write_text("input.dat\nMaxStep=3\n")
 
         self.step_file = self.input_file_path.joinpath("step")
         self.step_file.write_text("3")
@@ -66,11 +66,19 @@ class TestCollRunCaly(unittest.TestCase):
         self.task_name = calypso_task_pattern % 0
 
     def tearDown(self):
-        shutil.rmtree(self.input_file_path)
-        shutil.rmtree(Path(self.task_name))
+        shutil.rmtree(self.input_file_path, ignore_errors=True)
+        shutil.rmtree(Path(self.task_name), ignore_errors=True)
+
+    def test_get_max_step(self):
+        max_step = get_max_step(self.input_file)
+        self.assertTrue(max_step == 3)
+
+        temp_input_file = self.input_file_path.joinpath("temp_input_dat")
+        temp_input_file.write_text("input.dat\n")
+        self.assertRaises(ValueError, get_max_step, temp_input_file)
 
     @patch("dpgen2.op.collect_run_caly.run_command")
-    def test_success_00(self, mocked_run):
+    def test_step_st_maxstep_01(self, mocked_run):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
 
@@ -102,9 +110,41 @@ class TestCollRunCaly(unittest.TestCase):
         self.assertEqual(out["input_file"], self.input_file)
         self.assertEqual(out["step"], Path(self.task_name) / "step")
         self.assertEqual(out["results"], Path(self.task_name) / "results")
+        self.assertEqual(out["finished"], "False")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
-    def test_error_01(self, mocked_run):
+    def test_step_eq_maxstep_02(self, mocked_run):
+        if Path(self.task_name).is_dir():
+            shutil.rmtree(Path(self.task_name))
+
+        def side_effect(*args, **kwargs):
+            for i in range(5):
+                Path().joinpath(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
+            Path("step").write_text("4")
+            Path("results").mkdir(parents=True, exist_ok=True)
+            return (0, "foo\n", "")
+
+        mocked_run.side_effect = side_effect
+        op = CollRunCaly()
+        out = op.execute(
+            OPIO(
+                {
+                    "config": {"run_calypso_command": "echo 1"},
+                    "task_name": calypso_task_pattern % 0,
+                    "input_file": self.input_file,
+                    "step": self.step_file,
+                    "results": self.results_dir,
+                    "opt_results_dir": self.opt_results_dir,
+
+                }
+            )
+        )
+        # check output
+        self.assertEqual(out["poscar_dir"], None)
+        self.assertEqual(out["finished"], "True")
+
+    @patch("dpgen2.op.collect_run_caly.run_command")
+    def test_error_03(self, mocked_run):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
 

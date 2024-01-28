@@ -60,11 +60,9 @@ class CollRunCaly(OP):
                 "config": BigParameter(dict),  # for command
                 "task_name": BigParameter(str),  # calypso_task.idx
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
-                "step": Artifact(Path),  # step file
-                "results": Artifact(Path),  # dir named results for evo
-                "opt_results_dir": Artifact(
-                    Path
-                ),  # dir contains POSCAR* CONTCAR* OUTCAR*
+                "step": Artifact(Path) or None,  # step file
+                "results": Artifact(Path) or None,  # dir named results for evo
+                "opt_results_dir": Artifact(Path) or None,  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
 
@@ -73,7 +71,8 @@ class CollRunCaly(OP):
         return OPIOSign(
             {
                 "task_name": str,  # calypso_task.idx
-                "poscar_dir": Artifact(Path),  # dir contains POSCAR* of next step
+                "finished": str,  # True if step == maxstep
+                "poscar_dir": Artifact(Path) or None,  # dir contains POSCAR* of next step
                 "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
                 "step": Artifact(Path),  # step
@@ -104,7 +103,7 @@ class CollRunCaly(OP):
         -------
         Any
             Output dict with components:
-            - `poscar_dir`: (`Path`) The dir contains POSCAR*.
+            - `poscar_dir`: (`Path` or `None`) The dir contains POSCAR*.
 
             - `task_name`: (`str`) The name of the task (calypso_task.{idx}).
             - `input_file`: (`Path`) The input file of the task (input.dat).
@@ -122,6 +121,7 @@ class CollRunCaly(OP):
         command = config.get("run_calypso_command", "calypso.x")
         # input.dat
         input_file = ip["input_file"].resolve()
+        max_step = get_max_step(input_file)
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
 
@@ -160,15 +160,21 @@ class CollRunCaly(OP):
                     )
                 )
                 raise TransientError("calypso failed")
+
             poscar_dir = Path("poscar_dir")
             poscar_dir.mkdir(parents=True, exist_ok=True)
             for poscar in Path().glob("POSCAR_*"):
                 target = poscar_dir.joinpath(poscar.name)
                 shutil.copyfile(poscar, target)
 
+            step = Path("step").read_text().strip()
+            finished = True if int(step) == int(max_step) + 1 else False
+            poscar_dir = None if finished else poscar_dir
+
         ret_dict = {
-            "poscar_dir": poscar_dir,
             "task_name": str(work_dir),
+            "finished": str(finished),
+            "poscar_dir": poscar_dir,
             "input_file": ip["input_file"],
             "step": work_dir.joinpath("step"),
             "results": work_dir.joinpath("results"),
@@ -202,7 +208,22 @@ config_args = CollRunCaly.calypso_args
 
 
 def prep_last_calypso_file(step, results, opt_results_dir):
-    Path(step.name).symlink_to(step)
-    Path(results.name).symlink_to(results)
-    for file_name in opt_results_dir.iterdir():
-        Path(file_name.name).symlink_to(file_name)
+    if (
+        step is not None
+        and results is not None
+        and opt_results_dir is not None
+    ):
+        Path(step.name).symlink_to(step)
+        Path(results.name).symlink_to(results)
+        for file_name in opt_results_dir.iterdir():
+            Path(file_name.name).symlink_to(file_name)
+
+
+def get_max_step(filename):
+    with open(filename, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            if "MaxStep" in line:
+                max_step = int(line.strip().split("#")[0].split("=")[1])
+                return max_step
+        raise ValueError(f"Key 'MaxStep' missed in {str(filename)}")

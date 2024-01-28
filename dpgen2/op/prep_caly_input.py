@@ -305,7 +305,7 @@ class PrepCalyInput(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "caly_inputs": BigParameter(dict),  # calypso input params
+                "caly_inputs": BigParameter(List[dict]),  # calypso input params
             }
         )
 
@@ -313,7 +313,7 @@ class PrepCalyInput(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "task_names": BigParameter(str),  # task dir names
+                "task_names": BigParameter(List[str]),  # task dir names
                 "input_dat_files": Artifact(List[Path]),  # `input.dat`s
                 "caly_run_opt_files": Artifact(List[Path]),
                 "caly_check_opt_files": Artifact(List[Path]),

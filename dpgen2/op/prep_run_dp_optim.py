@@ -62,6 +62,7 @@ class PrepRunDPOptim(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
+                "task_name": str,
                 "optim_results_dir": Artifact(Path),
                 "traj_results_dir": Artifact(Path),
             }
@@ -90,6 +91,7 @@ class PrepRunDPOptim(OP):
         op : dict
             Output dict with components:
 
+            - `task_name`: (`str`)
             - `optim_results_dir`: (`List[str]`)
             - `traj_results_dir`: (`Artifact(List[Path])`)
         """
@@ -155,6 +157,7 @@ class PrepRunDPOptim(OP):
 
         return OPIO(
             {
+                "task_name": str(work_dir),
                 "optim_results_dir": optim_results_dir,
                 "traj_results_dir": traj_results_dir,
             }
