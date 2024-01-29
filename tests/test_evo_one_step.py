@@ -231,10 +231,6 @@ class TestCalyEvoStep(unittest.TestCase):
             input_file.write_text(f"input.dat-{i+1}")
             self.input_file_list.append(input_file)
 
-        self.step_list = [None, None]
-        self.results_list = [None, None]
-        self.opt_results_dir_list = [None, None]
-
         self.step_list = []
         for i in range(2):
             step_file = self.work_dir.joinpath(f"step-{i}-none")
@@ -309,9 +305,6 @@ class TestCalyEvoStep(unittest.TestCase):
             run_config=default_config,
             upload_python_packages=upload_python_packages,
         )
-        print(steps)
-        print(steps.input_parameters)
-        print(steps.input_artifacts)
         caly_evo_step = Step(
             "caly-evo-step",
             template=steps,

@@ -89,6 +89,8 @@ class CalyEvoStep(Steps):
                 artifacts=self._output_artifacts,
             ),
         )
+        print(self.inputs.parameters)
+        print(self.inputs.artifacts)
 
         self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
         self.step_keys = {}
