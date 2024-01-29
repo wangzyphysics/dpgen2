@@ -60,9 +60,9 @@ class CollRunCaly(OP):
                 "config": BigParameter(dict),  # for command
                 "task_name": BigParameter(str),  # calypso_task.idx
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
-                "step": Artifact(Path) or None,  # step file
-                "results": Artifact(Path) or None,  # dir named results for evo
-                "opt_results_dir": Artifact(Path) or None,  # dir contains POSCAR* CONTCAR* OUTCAR*
+                "step": Artifact(Path),  # step file
+                "results": Artifact(Path),  # dir named results for evo
+                "opt_results_dir": Artifact(Path),  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
 
@@ -72,7 +72,7 @@ class CollRunCaly(OP):
             {
                 "task_name": str,  # calypso_task.idx
                 "finished": str,  # True if step == maxstep
-                "poscar_dir": Artifact(Path) or None,  # dir contains POSCAR* of next step
+                "poscar_dir": Artifact(Path),  # dir contains POSCAR* of next step
                 "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
                 "step": Artifact(Path),  # step
@@ -103,7 +103,7 @@ class CollRunCaly(OP):
         -------
         Any
             Output dict with components:
-            - `poscar_dir`: (`Path` or `None`) The dir contains POSCAR*.
+            - `poscar_dir`: (`Path`) The dir contains POSCAR*.
 
             - `task_name`: (`str`) The name of the task (calypso_task.{idx}).
             - `input_file`: (`Path`) The input file of the task (input.dat).
@@ -120,20 +120,16 @@ class CollRunCaly(OP):
         config = CollRunCaly.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
         # input.dat
-        input_file = ip["input_file"].resolve()
+        _input_file = ip["input_file"]
+        input_file = _input_file.resolve()
         max_step = get_max_step(input_file)
+        print(f"in collect run caly: {max_step:}")
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
 
-        step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
-        results = (
-            ip["results"].resolve() if ip["results"] is not None else ip["results"]
-        )
-        opt_results_dir = (
-            ip["opt_results_dir"].resolve()
-            if ip["opt_results_dir"] is not None
-            else ip["opt_results_dir"]
-        )
+        step = ip["step"].resolve()
+        results = ip["results"].resolve()
+        opt_results_dir = ip["opt_results_dir"].resolve()
 
         with set_directory(work_dir):
             # prep files/dirs from last calypso run
@@ -175,7 +171,8 @@ class CollRunCaly(OP):
             "task_name": str(work_dir),
             "finished": str(finished),
             "poscar_dir": poscar_dir,
-            "input_file": ip["input_file"],
+            # "input_file": ip["input_file"],
+            "input_file": _input_file,
             "step": work_dir.joinpath("step"),
             "results": work_dir.joinpath("results"),
         }
@@ -209,9 +206,9 @@ config_args = CollRunCaly.calypso_args
 
 def prep_last_calypso_file(step, results, opt_results_dir):
     if (
-        step is not None
-        and results is not None
-        and opt_results_dir is not None
+        "none" not in step.name and
+        "none" not in results.name and
+        "none" not in opt_results_dir.name
     ):
         Path(step.name).symlink_to(step)
         Path(results.name).symlink_to(results)

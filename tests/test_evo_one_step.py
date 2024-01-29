@@ -81,7 +81,7 @@ from dpgen2.op.collect_run_caly import (
 from dpgen2.op.prep_run_dp_optim import (
     PrepRunDPOptim,
 )
-from dpgen2.dpgen2.superop.caly_evo_step import (
+from dpgen2.superop.caly_evo_step import (
     CalyEvoStep,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
@@ -94,53 +94,18 @@ default_config = normalize_step_dict(
     }
 )
 
-caly_inputs = [
-    {
-        "NumberOfSpecies": 3,
-        "NameOfAtoms": "Li La H",
-        "AtomicNumber": "1 2 3",
-        "NumberOfAtoms": "2 2 10",
-        "PopSize": 30,
-        "MaxStep": 10,
-        "DistanceOfIon": "1.0 1.0 1.0\n1.0 1.0 1.0\n1.0 1.0 1.0",
-    },
-    {
-        "UpDate": False,
-        "NumberOfSpecies": 3,
-        "NameOfAtoms": "Li La H",
-        "AtomicNumber": "1 2 3",
-        "NumberOfAtoms": "2 2 10",
-        "PopSize": 30,
-        "MaxStep": 10,
-        "DistanceOfIon": "1.0 1.0 1.0\n1.0 1.0 1.0\n1.0 1.0 1.0",
-        "VSC": True,
-        "CtrlRange": "1 3\n1 5\n1 10",
-        "MaxNumAtom": 100,
-    },
-]
 
-def _prep_caly_input():
-    op = PrepCalyInput()
-    out = op.execute(
-        OPIO(
-            {
-                "caly_inputs": caly_inputs,
-            }
-        )
-    )
-    return out
-
-
-class MockedRunCalypso(CollRunCaly):
+class MockedCollRunCaly(CollRunCaly):
     @OP.exec_sign_check
     def execute(
         self,
         ip: OPIO,
     ) -> OPIO:
 
+        print(ip)
         cwd = os.getcwd()
         config = ip["config"] if ip["config"] is not None else {}
-        config = RunCalypso.normalize_config(config)
+        config = CollRunCaly.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
         # input.dat
         input_file = ip["input_file"].resolve()
@@ -148,9 +113,9 @@ class MockedRunCalypso(CollRunCaly):
         work_dir = Path(ip["task_name"])
         work_dir.mkdir(exist_ok=True, parents=True)
 
-        step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
-        results = ip["results"].resolve() if ip["results"] is not None else ip["results"]
-        opt_results_dir = ip["opt_results_dir"].resolve() if ip["opt_results_dir"] is not None else ip["opt_results_dir"]
+        step = ip["step"].resolve()
+        results = ip["results"].resolve()
+        opt_results_dir = ip["opt_results_dir"].resolve()
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
@@ -244,25 +209,72 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
 
 
 @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
-class TestCalyOneStep(unittest.TestCase):
+class TestCalyEvoStep(unittest.TestCase):
     def setUp(self):
+        self.work_dir = Path("test_run_dir")
+        self.work_dir.mkdir(parents=True, exist_ok=True)
+
         self.nmodels = mocked_numb_models
         self.model_list = []
         for ii in range(self.nmodels):
-            model = Path(f"model{ii}.pb")
+            model = self.work_dir.joinpath(f"model{ii}.pb")
             model.write_text(f"model {ii}")
             self.model_list.append(model)
         self.models = upload_artifact(self.model_list)
 
+        self.block_id = "id123id"
+        self.task_name_list = ["calypso_test_evo.000", "calypso_test_evo.001"]
+
+        self.input_file_list = []
+        for i in range(2):
+            input_file = self.work_dir.joinpath(f"input_dat_{1}")
+            input_file.write_text(f"input.dat-{i+1}")
+            self.input_file_list.append(input_file)
+
+        self.step_list = [None, None]
+        self.results_list = [None, None]
+        self.opt_results_dir_list = [None, None]
+
+        self.step_list = []
+        for i in range(2):
+            step_file = self.work_dir.joinpath(f"step-{i}-none")
+            step_file.write_text("None")
+            self.step_list.append(step_file)
+
+        self.results_list = []
+        for i in range(2):
+            results_dir = self.work_dir.joinpath(f"results-{i}-none")
+            results_dir.mkdir(parents=True, exist_ok=True)
+            self.results_list.append(results_dir)
+
+        self.opt_results_dir_list = []
+        for i in range(2):
+            opt_results_dir = self.work_dir.joinpath(f"results-{i}-none")
+            opt_results_dir.mkdir(parents=True, exist_ok=True)
+            self.opt_results_dir_list.append(opt_results_dir)
+
+        self.caly_run_opt_files = []
+        for i in range(2):
+            caly_run_opt_file = self.work_dir.joinpath(f"caly_run_opt-{i}.py")
+            caly_run_opt_file.write_text(f"caly_run_opt-{i}")
+            self.caly_run_opt_files.append(caly_run_opt_file)
+
+        self.caly_check_opt_files = []
+        for i in range(2):
+            caly_check_opt_file = self.work_dir.joinpath(f"caly_check_opt-{i}.py")
+            caly_check_opt_file.write_text(f"caly_check_opt-{i}")
+            self.caly_check_opt_files.append(caly_check_opt_file)
+
     def tearDown(self):
-        for ii in range(self.nmodels):
-            model = Path(f"model{ii}.pb")
-            if model.is_file():
-                os.remove(model)
-        for ii in range(self.ngrp * self.ntask_per_grp):
-            work_path = Path(f"task.{ii:06d}")
-            if work_path.is_dir():
-                shutil.rmtree(work_path)
+        pass
+        # for ii in range(self.nmodels):
+        #     model = Path(f"model{ii}.pb")
+        #     if model.is_file():
+        #         os.remove(model)
+        # for ii in range(self.ngrp * self.ntask_per_grp):
+        #     work_path = Path(f"task.{ii:06d}")
+        #     if work_path.is_dir():
+        #         shutil.rmtree(work_path)
 
     def check_run_lmp_output(
         self,
@@ -290,27 +302,36 @@ class TestCalyOneStep(unittest.TestCase):
 
     def test(self):
         steps = CalyEvoStep(
-            "caly-one-step",
-            PrepCalyInput,
-            MockedRunCalypso,
+            "caly-evo-run",
+            MockedCollRunCaly,
             MockedPrepRunDPOptim,
             prep_config=default_config,
             run_config=default_config,
             upload_python_packages=upload_python_packages,
         )
-        caly_one_step = Step(
-            "caly-one-step",
+        print(steps)
+        print(steps.input_parameters)
+        print(steps.input_artifacts)
+        caly_evo_step = Step(
+            "caly-evo-step",
             template=steps,
             parameters={
-                "caly_inputs": caly_inputs,
+                "block_id": self.block_id,
+                "task_name_list": self.task_name_list,
             },
             artifacts={
                 "models": self.models,
+                "input_file_list": self.input_file_list,
+                "results_list": self.results_list,
+                "step_list": self.step_list,
+                "opt_results_dir_list": self.opt_results_dir_list,
+                "caly_run_opt_files": self.caly_run_opt_files,
+                "caly_check_opt_files": self.caly_check_opt_files,
             },
         )
 
-        wf = Workflow(name="CalyOneStep", host=default_host)
-        wf.add(caly_one_step)
+        wf = Workflow(name="caly-evo-step", host=default_host)
+        wf.add(caly_evo_step)
         wf.submit()
 
         # while wf.query_status() in ["Pending", "Running"]:

@@ -67,9 +67,9 @@ class CalyEvoStep(Steps):
             "caly_run_opt_files": InputArtifact(),
             "caly_check_opt_files": InputArtifact(),
             # calypso evo needed
-            "results_list": InputArtifact() | List[None],
-            "step_list": InputArtifact() | List[None],
-            "opt_results_dir_list": InputArtifact() | List[None],
+            "results_list": InputArtifact(),
+            "step_list": InputArtifact(),
+            "opt_results_dir_list": InputArtifact(),
         }
         self._output_parameters = {
             "task_names": OutputParameter(),
@@ -183,8 +183,8 @@ def _caly_evo_step(
         artifacts={
             "input_file": caly_evo_step_steps.inputs.artifacts["input_file_list"],
             "step": caly_evo_step_steps.inputs.artifacts["step_list"],
-            "results": caly_evo_step_steps.outputs.artifacts["results_list"],
-            "opt_results_dir": caly_evo_step_steps.outputs.artifacts["opt_results_dir_list"],
+            "results": caly_evo_step_steps.inputs.artifacts["results_list"],
+            "opt_results_dir": caly_evo_step_steps.inputs.artifacts["opt_results_dir_list"],
         },
         with_sequence=argo_sequence(
             argo_len(caly_evo_step_steps.inputs.parameters["task_name_list"]),
@@ -196,6 +196,7 @@ def _caly_evo_step(
     )
     caly_evo_step_steps.add(collect_run_calypso)
 
+    print("--------------is finished?", collect_run_calypso.outputs.parameters["finished"])
     # prep_run_dp_optim
     prep_run_dp_optim = Step(
         "prep-run-dp-optim",
@@ -252,12 +253,15 @@ def _caly_evo_step(
         },
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
-            "input_file_list": caly_evo_step_steps.inputs.artifacts["input_file_list"],  # input.dat
+            # "input_file_list": caly_evo_step_steps.inputs.artifacts["input_file_list"],  # input.dat
+            "input_file_list": collect_run_calypso.outputs.artifacts["input_file"],  # input.dat
             "results_list": collect_run_calypso.outputs.artifacts["results"],
             "step_list": collect_run_calypso.outputs.artifacts["step"],
-            "opt_results_dir_list": collect_run_calypso.outputs.artifacts["opt_results_dir_list"],
-            "caly_run_opt_files": caly_evo_step_steps.inputs.artifacts["caly_run_opt_files"],  # input.dat
-            "caly_check_opt_files": caly_evo_step_steps.inputs.artifacts["caly_check_opt_files"],  # input.dat
+            "opt_results_dir_list": prep_run_dp_optim.outputs.artifacts["optim_results_dir"],
+            # "caly_run_opt_files": caly_evo_step_steps.inputs.artifacts["caly_run_opt_files"],  # input.dat
+            # "caly_check_opt_files": caly_evo_step_steps.inputs.artifacts["caly_check_opt_files"],  # input.dat
+            "caly_run_opt_files": prep_run_dp_optim.outputs.artifacts["caly_run_opt_file"],  # input.dat
+            "caly_check_opt_files": prep_run_dp_optim.outputs.artifacts["caly_check_opt_file"],  # input.dat
             },
         when="%s == False" % (collect_run_calypso.outputs.parameters["finished"]),
     )

@@ -65,6 +65,8 @@ class PrepRunDPOptim(OP):
                 "task_name": str,
                 "optim_results_dir": Artifact(Path),
                 "traj_results_dir": Artifact(Path),
+                "caly_run_opt_file": Artifact(Path),
+                "caly_check_opt_file": Artifact(Path),
             }
         )
 
@@ -94,12 +96,16 @@ class PrepRunDPOptim(OP):
             - `task_name`: (`str`)
             - `optim_results_dir`: (`List[str]`)
             - `traj_results_dir`: (`Artifact(List[Path])`)
+            - `caly_run_opt_file` : (`Path`)
+            - `caly_check_opt_file` : (`Path`)
         """
         work_dir = Path(ip["task_name"])
         poscar_dir = ip["poscar_dir"]
         models_dir = ip["models_dir"]
-        caly_run_opt_file = ip["caly_run_opt_file"].resolve()
-        caly_check_opt_file = ip["caly_check_opt_file"].resolve()
+        _caly_run_opt_file = ip["caly_run_opt_file"]
+        _caly_check_opt_file = ip["caly_check_opt_file"]
+        caly_run_opt_file = _caly_run_opt_file.resolve()
+        caly_check_opt_file = _caly_check_opt_file.resolve()
         poscar_list = [
             poscar.resolve()
             for poscar in poscar_dir.iterdir()
@@ -160,5 +166,7 @@ class PrepRunDPOptim(OP):
                 "task_name": str(work_dir),
                 "optim_results_dir": optim_results_dir,
                 "traj_results_dir": traj_results_dir,
+                "caly_run_opt_file": _caly_run_opt_file,
+                "caly_check_opt_file": _caly_check_opt_file,
             }
         )
