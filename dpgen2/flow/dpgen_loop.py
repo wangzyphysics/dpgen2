@@ -158,21 +158,21 @@ class ConcurrentLearningLoop(Steps):
     def __init__(
         self,
         name: str,
+        explore_style,
         block_op: ConcurrentLearningBlock,
         step_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
+        self.explore_style = explore_style
         self._input_parameters = {
             "block_id": InputParameter(),
             "type_map": InputParameter(),
             "numb_models": InputParameter(type=int),
             "template_script": InputParameter(),
             "train_config": InputParameter(),
-            "lmp_config": InputParameter(),
             "conf_selector": InputParameter(),
             "fp_config": InputParameter(),
             "exploration_scheduler": InputParameter(),
-            "lmp_task_grp": InputParameter(),
             "optional_parameter": InputParameter(type=dict),
         }
         self._input_artifacts = {
@@ -180,6 +180,16 @@ class ConcurrentLearningLoop(Steps):
             "init_data": InputArtifact(),
             "iter_data": InputArtifact(),
         }
+        if explore_style == "lmp":
+            self._input_parameters.update(
+                {
+                    "lmp_config": InputParameter(),
+                    "lmp_task_grp": InputParameter(),
+                }
+            )
+        elif explore_style == "calypso":
+            pass
+
         self._output_parameters = {
             "exploration_scheduler": OutputParameter(),
         }
@@ -242,12 +252,15 @@ class ConcurrentLearning(Steps):
     def __init__(
         self,
         name: str,
+        explore_style,
         block_op: ConcurrentLearningBlock,
         step_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
+        self.explore_style = explore_style
         self.loop = ConcurrentLearningLoop(
             name + "-loop",
+            explore_style,
             block_op,
             step_config=step_config,
             upload_python_packages=upload_python_packages,
@@ -258,13 +271,21 @@ class ConcurrentLearning(Steps):
             "numb_models": InputParameter(type=int),
             "template_script": InputParameter(),
             "train_config": InputParameter(),
-            "lmp_config": InputParameter(),
             "fp_config": InputParameter(),
             "exploration_scheduler": InputParameter(),
             "optional_parameter": InputParameter(
                 type=dict, value=cl_default_optional_parameter
             ),
         }
+        if explore_style == "lmp":
+            self._input_parameters.update(
+                {
+                    "lmp_config": InputParameter(),
+                }
+            )
+        elif explore_style == "calypso":
+            pass
+
         self._input_artifacts = {
             "init_models": InputArtifact(optional=True),
             "init_data": InputArtifact(),
@@ -346,21 +367,31 @@ def _loop(
         steps.inputs.parameters["optional_parameter"]
     )
 
+    block_common_parameters = {
+        "block_id": steps.inputs.parameters["block_id"],
+        "type_map": steps.inputs.parameters["type_map"],
+        "numb_models": steps.inputs.parameters["numb_models"],
+        "template_script": steps.inputs.parameters["template_script"],
+        "train_config": steps.inputs.parameters["train_config"],
+        "conf_selector": steps.inputs.parameters["conf_selector"],
+        "fp_config": steps.inputs.parameters["fp_config"],
+        "optional_parameter": block_optional_parameter,
+    },
+    if steps.explore_style == "lmp":
+        block_common_parameters.update(
+            {
+                "lmp_config": steps.inputs.parameters["lmp_config"],
+                "lmp_task_grp": steps.inputs.parameters["lmp_task_grp"],
+            }
+        )
+    elif steps.explore_style == "calypso":
+        pass
+
+    print("-------block_common_parameters", block_common_parameters)
     block_step = Step(
         name=name + "-block",
         template=block_op,
-        parameters={
-            "block_id": steps.inputs.parameters["block_id"],
-            "type_map": steps.inputs.parameters["type_map"],
-            "numb_models": steps.inputs.parameters["numb_models"],
-            "template_script": steps.inputs.parameters["template_script"],
-            "train_config": steps.inputs.parameters["train_config"],
-            "lmp_config": steps.inputs.parameters["lmp_config"],
-            "conf_selector": steps.inputs.parameters["conf_selector"],
-            "fp_config": steps.inputs.parameters["fp_config"],
-            "lmp_task_grp": steps.inputs.parameters["lmp_task_grp"],
-            "optional_parameter": block_optional_parameter,
-        },
+        parameters=block_common_parameters,
         artifacts={
             "init_models": steps.inputs.artifacts["init_models"],
             "init_data": steps.inputs.artifacts["init_data"],
@@ -412,24 +443,34 @@ def _loop(
     )
     steps.add(id_step)
 
+    next_common_parameters = {
+        "block_id": id_step.outputs.parameters["block_id"],
+        "type_map": steps.inputs.parameters["type_map"],
+        "numb_models": steps.inputs.parameters["numb_models"],
+        "template_script": steps.inputs.parameters["template_script"],
+        "train_config": steps.inputs.parameters["train_config"],
+        "conf_selector": scheduler_step.outputs.parameters["conf_selector"],
+        "fp_config": steps.inputs.parameters["fp_config"],
+        "exploration_scheduler": scheduler_step.outputs.parameters[
+            "exploration_scheduler"
+        ],
+        "optional_parameter": steps.inputs.parameters["optional_parameter"],
+    },
+
+    if steps.explore_style == "lmp":
+        next_common_parameters.update(
+            {
+                "lmp_config": steps.inputs.parameters["lmp_config"],
+                "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
+            }
+        )
+    elif steps.explore_style == "calypso":
+        pass
+
     next_step = Step(
         name=name + "-next",
         template=steps,
-        parameters={
-            "block_id": id_step.outputs.parameters["block_id"],
-            "type_map": steps.inputs.parameters["type_map"],
-            "numb_models": steps.inputs.parameters["numb_models"],
-            "template_script": steps.inputs.parameters["template_script"],
-            "train_config": steps.inputs.parameters["train_config"],
-            "lmp_config": steps.inputs.parameters["lmp_config"],
-            "conf_selector": scheduler_step.outputs.parameters["conf_selector"],
-            "fp_config": steps.inputs.parameters["fp_config"],
-            "exploration_scheduler": scheduler_step.outputs.parameters[
-                "exploration_scheduler"
-            ],
-            "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
-            "optional_parameter": steps.inputs.parameters["optional_parameter"],
-        },
+        parameters=next_common_parameters,
         artifacts={
             "init_models": block_step.outputs.artifacts["models"],
             "init_data": steps.inputs.artifacts["init_data"],
@@ -515,24 +556,32 @@ def _dpgen(
     )
     steps.add(id_step)
 
+    common_parameters = {
+        "block_id": id_step.outputs.parameters["block_id"],
+        "type_map": steps.inputs.parameters["type_map"],
+        "numb_models": steps.inputs.parameters["numb_models"],
+        "template_script": steps.inputs.parameters["template_script"],
+        "train_config": steps.inputs.parameters["train_config"],
+        "conf_selector": scheduler_step.outputs.parameters["conf_selector"],
+        "fp_config": steps.inputs.parameters["fp_config"],
+        "exploration_scheduler": scheduler_step.outputs.parameters[
+            "exploration_scheduler"
+        ],
+        "optional_parameter": steps.inputs.parameters["optional_parameter"],
+    },
+    if steps.explore_style == "lmp":
+        common_parameters.update(
+            {
+                "lmp_config": steps.inputs.parameters["lmp_config"],
+                "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
+            }
+        )
+    elif steps.explore_style == "calypso":
+        pass
     loop_step = Step(
         name=name + "-loop",
         template=loop_op,
-        parameters={
-            "block_id": id_step.outputs.parameters["block_id"],
-            "type_map": steps.inputs.parameters["type_map"],
-            "numb_models": steps.inputs.parameters["numb_models"],
-            "template_script": steps.inputs.parameters["template_script"],
-            "train_config": steps.inputs.parameters["train_config"],
-            "conf_selector": scheduler_step.outputs.parameters["conf_selector"],
-            "lmp_config": steps.inputs.parameters["lmp_config"],
-            "fp_config": steps.inputs.parameters["fp_config"],
-            "exploration_scheduler": scheduler_step.outputs.parameters[
-                "exploration_scheduler"
-            ],
-            "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
-            "optional_parameter": steps.inputs.parameters["optional_parameter"],
-        },
+        parameters=common_parameters,
         artifacts={
             "init_models": steps.inputs.artifacts["init_models"],
             "init_data": steps.inputs.artifacts["init_data"],

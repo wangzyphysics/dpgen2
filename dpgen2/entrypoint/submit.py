@@ -201,6 +201,7 @@ def make_concurrent_learning_op(
     # ConcurrentLearningBlock
     block_cl_op = ConcurrentLearningBlock(
         "concurrent-learning-block",
+        explore_style,
         prep_run_train_op,
         prep_run_explore_op,
         SelectConfs,
@@ -213,6 +214,7 @@ def make_concurrent_learning_op(
     # dpgen
     dpgen_op = ConcurrentLearning(
         "concurrent-learning",
+        explore_style,
         block_cl_op,
         upload_python_packages=upload_python_packages,
         step_config=cl_step_config,

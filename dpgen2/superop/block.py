@@ -57,6 +57,9 @@ from .prep_run_fp import (
 from .prep_run_lmp import (
     PrepRunLmp,
 )
+from .prep_run_calypso import (
+    PrepRunCaly,
+)
 
 block_default_optional_parameter = {
     "data_mixed_type": False,
@@ -81,8 +84,9 @@ class ConcurrentLearningBlock(Steps):
     def __init__(
         self,
         name: str,
+        exploration_style,
         prep_run_dp_train_op: PrepRunDPTrain,
-        prep_run_lmp_op: PrepRunLmp,
+        prep_run_explore_op: PrepRunLmp | PrepRunCaly,
         select_confs_op: Type[OP],
         prep_run_fp_op: PrepRunFp,
         collect_data_op: Type[OP],
@@ -90,16 +94,15 @@ class ConcurrentLearningBlock(Steps):
         collect_data_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
+        self.explore_style = exploration_style
         self._input_parameters = {
             "block_id": InputParameter(),
             "type_map": InputParameter(),
             "numb_models": InputParameter(type=int),
             "template_script": InputParameter(),
             "train_config": InputParameter(),
-            "lmp_config": InputParameter(),
             "conf_selector": InputParameter(),
             "fp_config": InputParameter(),
-            "lmp_task_grp": InputParameter(),
             "optional_parameter": InputParameter(
                 type=dict, value=block_default_optional_parameter
             ),
@@ -109,6 +112,15 @@ class ConcurrentLearningBlock(Steps):
             "init_data": InputArtifact(),
             "iter_data": InputArtifact(),
         }
+        if exploration_style == "lmp":
+            self._input_parameters.update(
+                {
+                    "lmp_config": InputParameter(),
+                    "lmp_task_grp": InputParameter(),
+                }
+            )
+        elif exploration_style == "calypso":
+            pass
         self._output_parameters = {
             "exploration_report": OutputParameter(),
         }
@@ -133,7 +145,7 @@ class ConcurrentLearningBlock(Steps):
         self._my_keys = ["select-confs", "collect-data"]
         self._keys = (
             prep_run_dp_train_op.keys
-            + prep_run_lmp_op.keys
+            + prep_run_explore_op.keys
             + self._my_keys[:1]
             + prep_run_fp_op.keys
             + self._my_keys[1:2]
@@ -149,7 +161,7 @@ class ConcurrentLearningBlock(Steps):
             self.step_keys,
             name,
             prep_run_dp_train_op,
-            prep_run_lmp_op,
+            prep_run_explore_op,
             select_confs_op,
             prep_run_fp_op,
             collect_data_op,
@@ -184,7 +196,7 @@ def _block_cl(
     step_keys: Dict[str, Any],
     name: str,
     prep_run_dp_train_op: OPTemplate,
-    prep_run_lmp_op: OPTemplate,
+    prep_run_explore_op: OPTemplate,
     select_confs_op: Type[OP],
     prep_run_fp_op: OPTemplate,
     collect_data_op: Type[OP],
@@ -226,22 +238,38 @@ def _block_cl(
     )
     block_steps.add(prep_run_dp_train)
 
-    prep_run_lmp = Step(
-        name=name + "-prep-run-lmp",
-        template=prep_run_lmp_op,
-        parameters={
-            "block_id": block_steps.inputs.parameters["block_id"],
-            "lmp_config": block_steps.inputs.parameters["lmp_config"],
-            "lmp_task_grp": block_steps.inputs.parameters["lmp_task_grp"],
-        },
-        artifacts={
-            "models": prep_run_dp_train.outputs.artifacts["models"],
-        },
-        key="--".join(
-            ["%s" % block_steps.inputs.parameters["block_id"], "prep-run-lmp"]
-        ),
-    )
-    block_steps.add(prep_run_lmp)
+    if block_steps.explore_style == "lmp":
+        prep_run_explore = Step(
+            name=name + "-prep-run-lmp",
+            template=prep_run_explore_op,
+            parameters={
+                "block_id": block_steps.inputs.parameters["block_id"],
+                "lmp_config": block_steps.inputs.parameters["lmp_config"],
+                "lmp_task_grp": block_steps.inputs.parameters["lmp_task_grp"],
+            },
+            artifacts={
+                "models": prep_run_dp_train.outputs.artifacts["models"],
+            },
+            key="--".join(
+                ["%s" % block_steps.inputs.parameters["block_id"], "prep-run-lmp"]
+            ),
+        )
+    elif block_steps.explore_style == "calypso":
+        prep_run_explore = Step(
+            name=name + "-prep-run-calypso",
+            template=prep_run_explore_op,
+            parameters={
+                "block_id": block_steps.inputs.parameters["block_id"],
+            },
+            artifacts={
+                "models": prep_run_dp_train.outputs.artifacts["models"],
+            },
+            key="--".join(
+                ["%s" % block_steps.inputs.parameters["block_id"], "prep-run-calypso"]
+            ),
+        )
+
+    block_steps.add(prep_run_explore)
 
     select_confs = Step(
         name=name + "-select-confs",
@@ -256,8 +284,8 @@ def _block_cl(
             "type_map": block_steps.inputs.parameters["type_map"],
         },
         artifacts={
-            "trajs": prep_run_lmp.outputs.artifacts["trajs"],
-            "model_devis": prep_run_lmp.outputs.artifacts["model_devis"],
+            "trajs": prep_run_explore.outputs.artifacts["trajs"],
+            "model_devis": prep_run_explore.outputs.artifacts["model_devis"],
         },
         key=step_keys["select-confs"],
         executor=select_confs_executor,
@@ -314,7 +342,7 @@ def _block_cl(
     block_steps.outputs.artifacts["iter_data"]._from = collect_data.outputs.artifacts[
         "iter_data"
     ]
-    block_steps.outputs.artifacts["trajs"]._from = prep_run_lmp.outputs.artifacts[
+    block_steps.outputs.artifacts["trajs"]._from = prep_run_explore.outputs.artifacts[
         "trajs"
     ]
 
