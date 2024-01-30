@@ -170,6 +170,7 @@ class ConcurrentLearningLoop(Steps):
             "numb_models": InputParameter(type=int),
             "template_script": InputParameter(),
             "train_config": InputParameter(),
+            "explore_config": InputParameter(),
             "conf_selector": InputParameter(),
             "fp_config": InputParameter(),
             "exploration_scheduler": InputParameter(),
@@ -183,7 +184,6 @@ class ConcurrentLearningLoop(Steps):
         if explore_style == "lmp":
             self._input_parameters.update(
                 {
-                    "lmp_config": InputParameter(),
                     "lmp_task_grp": InputParameter(),
                 }
             )
@@ -271,20 +271,14 @@ class ConcurrentLearning(Steps):
             "numb_models": InputParameter(type=int),
             "template_script": InputParameter(),
             "train_config": InputParameter(),
+            "explore_config": InputParameter(),
             "fp_config": InputParameter(),
             "exploration_scheduler": InputParameter(),
             "optional_parameter": InputParameter(
                 type=dict, value=cl_default_optional_parameter
             ),
         }
-        if explore_style == "lmp":
-            self._input_parameters.update(
-                {
-                    "lmp_config": InputParameter(),
-                }
-            )
-        elif explore_style == "calypso":
-            pass
+        print("-------input_parameters in concurrentlearning", self._input_parameters)
 
         self._input_artifacts = {
             "init_models": InputArtifact(optional=True),
@@ -376,11 +370,11 @@ def _loop(
         "conf_selector": steps.inputs.parameters["conf_selector"],
         "fp_config": steps.inputs.parameters["fp_config"],
         "optional_parameter": block_optional_parameter,
-    },
+        "explore_config": steps.inputs.parameters["explore_config"],
+    }
     if steps.explore_style == "lmp":
         block_common_parameters.update(
             {
-                "lmp_config": steps.inputs.parameters["lmp_config"],
                 "lmp_task_grp": steps.inputs.parameters["lmp_task_grp"],
             }
         )
@@ -449,18 +443,18 @@ def _loop(
         "numb_models": steps.inputs.parameters["numb_models"],
         "template_script": steps.inputs.parameters["template_script"],
         "train_config": steps.inputs.parameters["train_config"],
+        "explore_config": steps.inputs.parameters["explore_config"],
         "conf_selector": scheduler_step.outputs.parameters["conf_selector"],
         "fp_config": steps.inputs.parameters["fp_config"],
         "exploration_scheduler": scheduler_step.outputs.parameters[
             "exploration_scheduler"
         ],
         "optional_parameter": steps.inputs.parameters["optional_parameter"],
-    },
+    }
 
     if steps.explore_style == "lmp":
         next_common_parameters.update(
             {
-                "lmp_config": steps.inputs.parameters["lmp_config"],
                 "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
             }
         )
@@ -562,17 +556,17 @@ def _dpgen(
         "numb_models": steps.inputs.parameters["numb_models"],
         "template_script": steps.inputs.parameters["template_script"],
         "train_config": steps.inputs.parameters["train_config"],
+        "explore_config": steps.inputs.parameters["explore_config"],
         "conf_selector": scheduler_step.outputs.parameters["conf_selector"],
         "fp_config": steps.inputs.parameters["fp_config"],
         "exploration_scheduler": scheduler_step.outputs.parameters[
             "exploration_scheduler"
         ],
         "optional_parameter": steps.inputs.parameters["optional_parameter"],
-    },
+    }
     if steps.explore_style == "lmp":
         common_parameters.update(
             {
-                "lmp_config": steps.inputs.parameters["lmp_config"],
                 "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
             }
         )

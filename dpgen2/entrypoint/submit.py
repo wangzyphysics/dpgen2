@@ -438,16 +438,16 @@ def workflow_concurrent_learning(
     else:
         template_script = json.loads(Path(template_script_).read_text())
     train_config = config["train"]["config"]
-    lmp_config = config["explore"]["config"]
+    explore_config = config["explore"]["config"]
     if (
-        "teacher_model_path" in lmp_config
-        and lmp_config["teacher_model_path"] is not None
+        "teacher_model_path" in explore_config
+        and explore_config["teacher_model_path"] is not None
     ):
         assert os.path.exists(
-            lmp_config["teacher_model_path"]
-        ), f"No such file: {lmp_config['teacher_model_path']}"
-        lmp_config["teacher_model_path"] = BinaryFileInput(
-            lmp_config["teacher_model_path"], "pb"
+            explore_config["teacher_model_path"]
+        ), f"No such file: {explore_config['teacher_model_path']}"
+        explore_config["teacher_model_path"] = BinaryFileInput(
+            explore_config["teacher_model_path"], "pb"
         )
 
     fp_config = {}
@@ -516,7 +516,7 @@ def workflow_concurrent_learning(
             "numb_models": numb_models,
             "template_script": template_script,
             "train_config": train_config,
-            "lmp_config": lmp_config,
+            "explore_config": explore_config,
             "fp_config": fp_config,
             "exploration_scheduler": scheduler,
             "optional_parameter": optional_parameter,

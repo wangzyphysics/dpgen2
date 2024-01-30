@@ -101,6 +101,7 @@ class ConcurrentLearningBlock(Steps):
             "numb_models": InputParameter(type=int),
             "template_script": InputParameter(),
             "train_config": InputParameter(),
+            "explore_config": InputParameter(),
             "conf_selector": InputParameter(),
             "fp_config": InputParameter(),
             "optional_parameter": InputParameter(
@@ -115,7 +116,6 @@ class ConcurrentLearningBlock(Steps):
         if exploration_style == "lmp":
             self._input_parameters.update(
                 {
-                    "lmp_config": InputParameter(),
                     "lmp_task_grp": InputParameter(),
                 }
             )
@@ -244,7 +244,7 @@ def _block_cl(
             template=prep_run_explore_op,
             parameters={
                 "block_id": block_steps.inputs.parameters["block_id"],
-                "lmp_config": block_steps.inputs.parameters["lmp_config"],
+                "lmp_config": block_steps.inputs.parameters["explore_config"],
                 "lmp_task_grp": block_steps.inputs.parameters["lmp_task_grp"],
             },
             artifacts={
