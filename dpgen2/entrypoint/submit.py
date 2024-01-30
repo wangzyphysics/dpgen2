@@ -94,6 +94,9 @@ from dpgen2.op import (
     RunLmp,
     SelectConfs,
     RunCalyModelDevi,
+    PrepCalyInput,
+    CollRunCaly,
+    PrepRunDPOptim,
 )
 from dpgen2.superop import (
     ConcurrentLearningBlock,
@@ -101,7 +104,7 @@ from dpgen2.superop import (
     PrepRunFp,
     PrepRunLmp,
     PrepRunCaly,
-    CalyOneRun,
+    CalyEvoStep,
 )
 from dpgen2.utils import (
     BinaryFileInput,
@@ -140,8 +143,8 @@ def make_concurrent_learning_op(
     cl_step_config: dict = default_config,
     upload_python_packages: Optional[List[os.PathLike]] = None,
 ):
-    print(f"------------{prep_explore_config:}")
-    print(f"------------{run_explore_config:}")
+    print(f"----prep_explore_config--------{prep_explore_config:}")
+    print(f"----run_explore_config--------{run_explore_config:}")
     if train_style in ("dp", "dp-dist"):
         prep_run_train_op = PrepRunDPTrain(
             "prep-run-dp-train",
@@ -163,10 +166,19 @@ def make_concurrent_learning_op(
             upload_python_packages=upload_python_packages,
         )
     elif explore_style == "calypso":
+        caly_evo_step_op = CalyEvoStep(
+            "caly-evo-step",
+            collect_run_caly=CollRunCaly,
+            prep_run_dp_optim=PrepRunDPOptim,
+            prep_config=prep_explore_config,
+            run_config=run_explore_config,
+            upload_python_packages=upload_python_packages,
+        )
         prep_run_explore_op = PrepRunCaly(
             "prep-run-calypso",
-            caly_one_step=CalyOneRun,
-            run_caly_model_devi=RunCalyModelDevi,
+            prep_caly_input_op=PrepCalyInput,
+            caly_evo_step_op=caly_evo_step_op,
+            run_caly_model_devi_op=RunCalyModelDevi,
             prep_config=prep_explore_config,
             run_config=run_explore_config,
             upload_python_packages=upload_python_packages,

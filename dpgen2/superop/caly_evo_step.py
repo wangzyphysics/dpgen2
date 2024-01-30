@@ -89,8 +89,6 @@ class CalyEvoStep(Steps):
                 artifacts=self._output_artifacts,
             ),
         )
-        print(self.inputs.parameters)
-        print(self.inputs.artifacts)
 
         self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
         self.step_keys = {}
@@ -143,6 +141,7 @@ def _caly_evo_step(
     run_config = deepcopy(run_config)
     prep_template_config = prep_config.pop("template_config")
     run_template_config = run_config.pop("template_config")
+    caly_config = run_template_config.pop("caly_config")
     prep_executor = init_executor(prep_config.pop("executor"))
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})
@@ -198,7 +197,6 @@ def _caly_evo_step(
     )
     caly_evo_step_steps.add(collect_run_calypso)
 
-    print("--------------is finished?", collect_run_calypso.outputs.parameters["finished"])
     # prep_run_dp_optim
     prep_run_dp_optim = Step(
         "prep-run-dp-optim",

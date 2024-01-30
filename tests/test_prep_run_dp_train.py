@@ -36,20 +36,20 @@ from dflow.python import (
 )
 
 try:
-    from context import (
+    from .context import (
         dpgen2,
     )
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from context import (
+from .context import (
     default_host,
     default_image,
     skip_ut_with_dflow,
     skip_ut_with_dflow_reason,
     upload_python_packages,
 )
-from mocked_ops import (
+from .mocked_ops import (
     MockedModifyTrainScript,
     MockedPrepDPTrain,
     MockedRunDPTrain,

@@ -102,7 +102,7 @@ class MockedCollRunCaly(CollRunCaly):
         ip: OPIO,
     ) -> OPIO:
 
-        print(ip)
+        print("in mockedCollRunCaly, IP: ", ip)
         cwd = os.getcwd()
         config = ip["config"] if ip["config"] is not None else {}
         config = CollRunCaly.normalize_config(config)
@@ -119,15 +119,22 @@ class MockedCollRunCaly(CollRunCaly):
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
+        if "none" not in step.name and "none" not in results.name and "none" not in opt_results_dir.name:
+            Path(step.name).symlink_to(step)
+            Path(results.name).symlink_to(results)
+            Path(opt_results_dir.name).symlink_to(opt_results_dir)
 
         for i in range(5):
             Path().joinpath(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
         Path("step").write_text("3")
         Path("results").mkdir(parents=True, exist_ok=True)
+        Path("results/pso_ini_1").write_text("pso_ini_1")
+        Path("results/pso_opt_1").write_text("pso_opt_1")
 
         poscar_dir = Path("poscar_dir")
         poscar_dir.mkdir(parents=True, exist_ok=True)
         for poscar in Path().glob("POSCAR_*"):
+            print(poscar)
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
 
