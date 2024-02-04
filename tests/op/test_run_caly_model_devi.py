@@ -6,6 +6,12 @@ from pathlib import (
 )
 
 import numpy as np
+from ase import (
+    Atoms,
+)
+from ase.io import (
+    write,
+)
 from dflow.python import (
     OP,
     OPIO,
@@ -18,25 +24,24 @@ from mock import (
     mock,
     patch,
 )
-from dpgen2.op.run_caly_model_devi import (
-    parse_traj,
-    atoms2lmpdump,
-    RunCalyModelDevi,
-)
-from .context import (
-    dpgen2,
-)
+
 from dpgen2.constants import (
-    calypso_task_pattern,
     calypso_input_file,
     calypso_log_name,
-
+    calypso_task_pattern,
+)
+from dpgen2.op.run_caly_model_devi import (
+    RunCalyModelDevi,
+    atoms2lmpdump,
+    parse_traj,
 )
 from dpgen2.utils import (
     BinaryFileInput,
 )
-from ase import Atoms
-from ase.io import write
+
+from .context import (
+    dpgen2,
+)
 
 # isort: on
 
@@ -49,12 +54,12 @@ class TestRunCalyModelDevi(unittest.TestCase):
         self.atoms_normal = Atoms(
             numbers=[1, 2],
             scaled_positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
-            cell=[[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+            cell=[[10, 0, 0], [0, 10, 0], [0, 0, 10]],
         )
         self.atoms_abnormal = Atoms(
             numbers=[1, 2],
-            scaled_positions=[[0, 0, 0],[0., 0., 0.]],
-            cell=[[10, 0, 0], [0, 10, 0], [0, 0, 10]]
+            scaled_positions=[[0, 0, 0], [0.0, 0.0, 0.0]],
+            cell=[[10, 0, 0], [0, 10, 0], [0, 0, 10]],
         )
         self.traj_file_1 = self.work_dir.joinpath("1.traj")
         self.traj_file_2 = self.work_dir.joinpath("2.traj")
@@ -100,13 +105,14 @@ ITEM: ATOMS id type x y z fx fy fz
     @patch("dpgen2.op.run_caly_model_devi.calc_model_devi")
     @patch("dpgen2.op.run_caly_model_devi.DP")
     def test_02_success(self, mocked_run_1, mocked_run_2):
-
         def side_effect_1(*args, **kwargs):
             return "foo"
+
         mocked_run_1.side_effect = side_effect_1
 
         def side_effect_2(*args, **kwargs):
             return [[1, 1, 1, 1, 1, 1, 1]]
+
         mocked_run_2.side_effect = side_effect_2
 
         op = RunCalyModelDevi()

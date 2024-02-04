@@ -1,11 +1,3 @@
-import numpy as np
-
-from ase import Atoms
-from ase.io import read, write
-from ase.geometry import cellpar_to_cell
-
-from deepmd.infer import calc_model_devi
-from deepmd.calculator import DP
 from pathlib import (
     Path,
 )
@@ -13,13 +5,29 @@ from typing import (
     List,
 )
 
+import numpy as np
+from ase import (
+    Atoms,
+)
+from ase.geometry import (
+    cellpar_to_cell,
+)
+from ase.io import (
+    read,
+    write,
+)
+from deepmd.calculator import (
+    DP,
+)
+from deepmd.infer import (
+    calc_model_devi,
+)
 from dflow.python import (
     OP,
     OPIO,
     Artifact,
     OPIOSign,
 )
-
 
 from dpgen2.utils import (
     set_directory,

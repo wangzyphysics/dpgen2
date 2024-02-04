@@ -36,10 +36,11 @@ from dflow.python import (
     OPIOSign,
     PythonOPTemplate,
 )
+
 from dpgen2.constants import (
     calypso_check_opt_file,
-    calypso_run_opt_file,
     calypso_index_pattern,
+    calypso_run_opt_file,
 )
 
 try:
@@ -49,18 +50,6 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from .context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from .mocked_ops import (
-    MockedRunLmp,
-    mocked_numb_models,
-)
-
 from dpgen2.constants import (
     lmp_conf_name,
     lmp_input_name,
@@ -77,11 +66,11 @@ from dpgen2.exploration.task import (
     ExplorationTask,
     ExplorationTaskGroup,
 )
-from dpgen2.op.prep_caly_input import (
-    PrepCalyInput,
-)
 from dpgen2.op.collect_run_caly import (
     CollRunCaly,
+)
+from dpgen2.op.prep_caly_input import (
+    PrepCalyInput,
 )
 from dpgen2.op.prep_run_dp_optim import (
     PrepRunDPOptim,
@@ -90,6 +79,18 @@ from dpgen2.superop.caly_evo_step import (
     CalyEvoStep,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
+
+from .context import (
+    default_host,
+    default_image,
+    skip_ut_with_dflow,
+    skip_ut_with_dflow_reason,
+    upload_python_packages,
+)
+from .mocked_ops import (
+    MockedRunLmp,
+    mocked_numb_models,
+)
 
 default_config = normalize_step_dict(
     {
@@ -106,7 +107,6 @@ class MockedCollRunCaly(CollRunCaly):
         self,
         ip: OPIO,
     ) -> OPIO:
-
         print(f"----------------in mockedCollRunCaly: ip:{ip}")
         cwd = os.getcwd()
         config = ip["config"] if ip["config"] is not None else {}
@@ -124,7 +124,11 @@ class MockedCollRunCaly(CollRunCaly):
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
-        if "none" not in step.name and "none" not in results.name and "none" not in opt_results_dir.name:
+        if (
+            "none" not in step.name
+            and "none" not in results.name
+            and "none" not in opt_results_dir.name
+        ):
             Path(step.name).symlink_to(step)
             Path(results.name).symlink_to(results)
             Path(opt_results_dir.name).symlink_to(opt_results_dir)
@@ -188,16 +192,20 @@ class TestMockedCollRunCaly(unittest.TestCase):
                     "step": self.step_file,
                     "results": self.results_dir,
                     "opt_results_dir": self.opt_results_dir,
-
                 }
             )
         )
 
         self.assertTrue(out["task_name"] == self.task_name)
         self.assertTrue(out["finished"] == self.finished)
-        self.assertTrue(Path("task_name/poscar_dir").joinpath("POSCAR_1") in list(out["poscar_dir"].glob("POSCAR_*")))
+        self.assertTrue(
+            Path("task_name/poscar_dir").joinpath("POSCAR_1")
+            in list(out["poscar_dir"].glob("POSCAR_*"))
+        )
         self.assertTrue(len(list(out["poscar_dir"].rglob("POSCAR_*"))) == 5)
-        self.assertTrue(out["input_file"] == Path(self.task_name).joinpath(self.input_file.name))
+        self.assertTrue(
+            out["input_file"] == Path(self.task_name).joinpath(self.input_file.name)
+        )
         self.assertTrue(out["input_file"].read_text() == "input.dat")
         self.assertTrue(out["step"] == Path(self.task_name).joinpath("step"))
         self.assertTrue(out["step"].read_text() == "3")
@@ -210,7 +218,6 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
         self,
         ip: OPIO,
     ) -> OPIO:
-
         print("----------------start mockedPrepRunDPOptim")
         cwd = os.getcwd()
 
@@ -221,10 +228,7 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
         models_dir = ip["models_dir"]
         caly_run_opt_file = ip["caly_run_opt_file"].resolve()
         caly_check_opt_file = ip["caly_check_opt_file"].resolve()
-        poscar_list = [
-            poscar.resolve()
-            for poscar in poscar_dir.iterdir()
-        ]
+        poscar_list = [poscar.resolve() for poscar in poscar_dir.iterdir()]
         model_list = [model.resolve() for model in models_dir.iterdir()]
         model_list = sorted(model_list, key=lambda x: str(x).split(".")[1])
         model_file = model_list[0]
@@ -321,22 +325,34 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
         optim_results_dir = out["optim_results_dir"]
         list_optim_results_dir = list(optim_results_dir.iterdir())
         counts_optim_results_dir = len(list_optim_results_dir)
-        counts_outcar_in_optim_results_dir = len(list(optim_results_dir.rglob("OUTCAR_*")))
+        counts_outcar_in_optim_results_dir = len(
+            list(optim_results_dir.rglob("OUTCAR_*"))
+        )
 
         self.assertTrue(optim_results_dir, Path(self.task_name) / "optim_results_dir")
         self.assertEqual(counts_optim_results_dir, 15)
         self.assertEqual(counts_outcar_in_optim_results_dir, 5)
-        self.assertTrue(Path(self.task_name) / "optim_results_dir" / "CONTCAR_4" in list_optim_results_dir)
+        self.assertTrue(
+            Path(self.task_name) / "optim_results_dir" / "CONTCAR_4"
+            in list_optim_results_dir
+        )
 
         traj_results_dir = out["traj_results_dir"]
         list_traj_results_dir = list(traj_results_dir.glob("*.traj"))
         counts_traj = len(list_traj_results_dir)
         self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results_dir")
         self.assertEqual(counts_traj, 5)
-        self.assertTrue(Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir)
+        self.assertTrue(
+            Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir
+        )
 
-        self.assertEqual(Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"])
-        self.assertEqual(Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"])
+        self.assertEqual(
+            Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"]
+        )
+        self.assertEqual(
+            Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"]
+        )
+
 
 # @unittest.skip("temporary pass")
 @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)

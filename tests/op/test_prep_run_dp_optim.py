@@ -67,12 +67,16 @@ class TestPrepRunDPOptim(unittest.TestCase):
         self.ref_optim_results_dir.mkdir(parents=True, exist_ok=True)
         for temp in self.poscar_dir.iterdir():
             self.ref_optim_results_dir.joinpath(temp.name).symlink_to(temp.resolve())
-            self.ref_optim_results_dir.joinpath(str(temp.name).replace("POSCAR", "CONTCAR")).write_text("foo")
-            self.ref_optim_results_dir.joinpath(str(temp.name).replace("POSCAR", "OUTCAR")).write_text("foo")
+            self.ref_optim_results_dir.joinpath(
+                str(temp.name).replace("POSCAR", "CONTCAR")
+            ).write_text("foo")
+            self.ref_optim_results_dir.joinpath(
+                str(temp.name).replace("POSCAR", "OUTCAR")
+            ).write_text("foo")
 
         self.ref_traj_results_dir = Path("traj_results_dir")
         self.ref_traj_results_dir.mkdir(parents=True, exist_ok=True)
-        for i in range(1, len(list(self.poscar_dir.iterdir()))+1):
+        for i in range(1, len(list(self.poscar_dir.iterdir())) + 1):
             self.ref_optim_results_dir.joinpath(f"{str(i+1)}.traj").write_text("foo")
 
     def tearDown(self):
@@ -114,22 +118,33 @@ class TestPrepRunDPOptim(unittest.TestCase):
         optim_results_dir = out["optim_results_dir"]
         list_optim_results_dir = list(optim_results_dir.iterdir())
         counts_optim_results_dir = len(list_optim_results_dir)
-        counts_outcar_in_optim_results_dir = len(list(optim_results_dir.rglob("OUTCAR_*")))
+        counts_outcar_in_optim_results_dir = len(
+            list(optim_results_dir.rglob("OUTCAR_*"))
+        )
 
         self.assertTrue(optim_results_dir, Path(self.task_name) / "optim_results_dir")
         self.assertEqual(counts_optim_results_dir, 15)
         self.assertEqual(counts_outcar_in_optim_results_dir, 5)
-        self.assertTrue(Path(self.task_name) / "optim_results_dir" / "CONTCAR_4" in list_optim_results_dir)
+        self.assertTrue(
+            Path(self.task_name) / "optim_results_dir" / "CONTCAR_4"
+            in list_optim_results_dir
+        )
 
         traj_results_dir = out["traj_results_dir"]
         list_traj_results_dir = list(traj_results_dir.glob("*.traj"))
         counts_traj = len(list_traj_results_dir)
         self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results_dir")
         self.assertEqual(counts_traj, 5)
-        self.assertTrue(Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir)
+        self.assertTrue(
+            Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir
+        )
 
-        self.assertEqual(Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"])
-        self.assertEqual(Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"])
+        self.assertEqual(
+            Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"]
+        )
+        self.assertEqual(
+            Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"]
+        )
 
     @patch("dpgen2.op.prep_run_dp_optim.run_command")
     def test_error_01(self, mocked_run):
@@ -157,5 +172,5 @@ class TestPrepRunDPOptim(unittest.TestCase):
                     "caly_run_opt_file": self.caly_run_opt_file,
                     "caly_check_opt_file": self.caly_check_opt_file,
                 }
-            )
+            ),
         )

@@ -88,23 +88,23 @@ from dpgen2.fp import (
 )
 from dpgen2.op import (
     CollectData,
+    CollRunCaly,
+    PrepCalyInput,
     PrepDPTrain,
     PrepLmp,
+    PrepRunDPOptim,
+    RunCalyModelDevi,
     RunDPTrain,
     RunLmp,
     SelectConfs,
-    RunCalyModelDevi,
-    PrepCalyInput,
-    CollRunCaly,
-    PrepRunDPOptim,
 )
 from dpgen2.superop import (
+    CalyEvoStep,
     ConcurrentLearningBlock,
+    PrepRunCaly,
     PrepRunDPTrain,
     PrepRunFp,
     PrepRunLmp,
-    PrepRunCaly,
-    CalyEvoStep,
 )
 from dpgen2.utils import (
     BinaryFileInput,

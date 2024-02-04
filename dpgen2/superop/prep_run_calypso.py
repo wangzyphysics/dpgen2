@@ -7,9 +7,9 @@ from pathlib import (
 )
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
-    Dict,
     Type,
 )
 
@@ -17,12 +17,12 @@ from dflow import (
     InputArtifact,
     InputParameter,
     Inputs,
+    OPTemplate,
     OutputArtifact,
     OutputParameter,
     Outputs,
     Step,
     Steps,
-    OPTemplate,
 )
 from dflow.python import (
     OP,
@@ -36,11 +36,14 @@ from dflow.python import (
 from dpgen2.constants import (
     calypso_index_pattern,
 )
-from .caly_evo_step import CalyEvoStep
 from dpgen2.utils.step_config import (
     init_executor,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
+
+from .caly_evo_step import (
+    CalyEvoStep,
+)
 
 
 class PrepRunCaly(Steps):
@@ -175,8 +178,12 @@ def _prep_run_caly(
         artifacts={
             "models": prep_run_caly_steps.inputs.artifacts["models"],
             "input_file_list": prep_caly_input.outputs.artifacts["input_dat_files"],
-            "caly_run_opt_files": prep_caly_input.outputs.artifacts["caly_run_opt_files"],
-            "caly_check_opt_files": prep_caly_input.outputs.artifacts["caly_check_opt_files"],
+            "caly_run_opt_files": prep_caly_input.outputs.artifacts[
+                "caly_run_opt_files"
+            ],
+            "caly_check_opt_files": prep_caly_input.outputs.artifacts[
+                "caly_check_opt_files"
+            ],
             "results_list": temp_value,
             "step_list": temp_value,
             "opt_results_dir_list": temp_value,

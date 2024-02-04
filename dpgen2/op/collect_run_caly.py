@@ -62,7 +62,9 @@ class CollRunCaly(OP):
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
                 "step": Artifact(Path),  # step file
                 "results": Artifact(Path),  # dir named results for evo
-                "opt_results_dir": Artifact(Path),  # dir contains POSCAR* CONTCAR* OUTCAR*
+                "opt_results_dir": Artifact(
+                    Path
+                ),  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
 
@@ -205,9 +207,9 @@ config_args = CollRunCaly.calypso_args
 
 def prep_last_calypso_file(step, results, opt_results_dir):
     if (
-        "none" not in step.name and
-        "none" not in results.name and
-        "none" not in opt_results_dir.name
+        "none" not in step.name
+        and "none" not in results.name
+        and "none" not in opt_results_dir.name
     ):
         Path(step.name).symlink_to(step)
         Path(results.name).symlink_to(results)
