@@ -123,7 +123,6 @@ class CollRunCaly(OP):
         _input_file = ip["input_file"]
         input_file = _input_file.resolve()
         max_step = get_max_step(input_file)
-        print(f"in collect run caly: {max_step:}")
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
 
@@ -165,12 +164,12 @@ class CollRunCaly(OP):
 
             step = Path("step").read_text().strip()
             finished = True if int(step) == int(max_step) + 1 else False
-            poscar_dir = None if finished else poscar_dir
+            poscar_dir = "poscar_dir_none" if not finished else poscar_dir
 
         ret_dict = {
             "task_name": str(work_dir),
             "finished": str(finished),
-            "poscar_dir": poscar_dir,
+            "poscar_dir": work_dir.joinpath(poscar_dir),
             # "input_file": ip["input_file"],
             "input_file": _input_file,
             "step": work_dir.joinpath("step"),

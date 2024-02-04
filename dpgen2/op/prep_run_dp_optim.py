@@ -164,9 +164,9 @@ class PrepRunDPOptim(OP):
         return OPIO(
             {
                 "task_name": str(work_dir),
-                "optim_results_dir": optim_results_dir,
-                "traj_results_dir": traj_results_dir,
-                "caly_run_opt_file": _caly_run_opt_file,
-                "caly_check_opt_file": _caly_check_opt_file,
+                "optim_results_dir": work_dir / optim_results_dir,
+                "traj_results_dir": work_dir / traj_results_dir,
+                "caly_run_opt_file": work_dir / caly_run_opt_file.name,
+                "caly_check_opt_file": work_dir / caly_check_opt_file.name,
             }
         )

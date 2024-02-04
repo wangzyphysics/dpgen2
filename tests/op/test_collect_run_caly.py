@@ -105,7 +105,7 @@ class TestCollRunCaly(unittest.TestCase):
             )
         )
         # check output
-        self.assertEqual(out["poscar_dir"], Path("poscar_dir"))
+        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none"))
         self.assertEqual(out["task_name"], self.task_name)
         self.assertEqual(out["input_file"], self.input_file)
         self.assertEqual(out["step"], Path(self.task_name) / "step")
@@ -113,7 +113,38 @@ class TestCollRunCaly(unittest.TestCase):
         self.assertEqual(out["finished"], "False")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
-    def test_step_eq_maxstep_02(self, mocked_run):
+    def test_step_no_eq_maxstep_02(self, mocked_run):
+        if Path(self.task_name).is_dir():
+            shutil.rmtree(Path(self.task_name))
+
+        def side_effect(*args, **kwargs):
+            for i in range(5):
+                Path().joinpath(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
+            Path("step").write_text("2")
+            Path("results").mkdir(parents=True, exist_ok=True)
+            return (0, "foo\n", "")
+
+        mocked_run.side_effect = side_effect
+        op = CollRunCaly()
+        out = op.execute(
+            OPIO(
+                {
+                    "config": {"run_calypso_command": "echo 1"},
+                    "task_name": calypso_task_pattern % 0,
+                    "input_file": self.input_file,
+                    "step": self.step_file,
+                    "results": self.results_dir,
+                    "opt_results_dir": self.opt_results_dir,
+
+                }
+            )
+        )
+        # check output
+        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none"))
+        self.assertEqual(out["finished"], "False")
+
+    @patch("dpgen2.op.collect_run_caly.run_command")
+    def test_step_eq_maxstep_03(self, mocked_run):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
 
@@ -140,11 +171,12 @@ class TestCollRunCaly(unittest.TestCase):
             )
         )
         # check output
-        self.assertEqual(out["poscar_dir"], None)
+        self.assertEqual(len(list(out["poscar_dir"].rglob("POSCAR_*"))), 5)
+        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir"))
         self.assertEqual(out["finished"], "True")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
-    def test_error_03(self, mocked_run):
+    def test_error_04(self, mocked_run):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
 

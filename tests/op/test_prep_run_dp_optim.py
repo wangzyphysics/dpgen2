@@ -88,7 +88,7 @@ class TestPrepRunDPOptim(unittest.TestCase):
             shutil.rmtree(Path(self.task_name))
 
         def side_effect(*args, **kwargs):
-            for i in range(5):
+            for i in range(1, 6):
                 Path().joinpath(f"CONTCAR_{str(i)}").write_text(f"CONTCAR_{str(i)}")
                 Path().joinpath(f"OUTCAR_{str(i)}").write_text(f"OUTCAR_{str(i)}")
                 Path().joinpath(f"{str(i)}.traj").write_text(f"{str(i)}.traj")
@@ -109,8 +109,27 @@ class TestPrepRunDPOptim(unittest.TestCase):
             )
         )
         # check output
-        self.assertEqual(out["optim_results_dir"], self.ref_optim_results_dir)
-        self.assertEqual(out["traj_results_dir"], self.ref_traj_results_dir)
+        self.assertEqual(out["task_name"], self.task_name)
+
+        optim_results_dir = out["optim_results_dir"]
+        list_optim_results_dir = list(optim_results_dir.iterdir())
+        counts_optim_results_dir = len(list_optim_results_dir)
+        counts_outcar_in_optim_results_dir = len(list(optim_results_dir.rglob("OUTCAR_*")))
+
+        self.assertTrue(optim_results_dir, Path(self.task_name) / "optim_results_dir")
+        self.assertEqual(counts_optim_results_dir, 15)
+        self.assertEqual(counts_outcar_in_optim_results_dir, 5)
+        self.assertTrue(Path(self.task_name) / "optim_results_dir" / "CONTCAR_4" in list_optim_results_dir)
+
+        traj_results_dir = out["traj_results_dir"]
+        list_traj_results_dir = list(traj_results_dir.glob("*.traj"))
+        counts_traj = len(list_traj_results_dir)
+        self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results_dir")
+        self.assertEqual(counts_traj, 5)
+        self.assertTrue(Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir)
+
+        self.assertEqual(Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"])
+        self.assertEqual(Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"])
 
     @patch("dpgen2.op.prep_run_dp_optim.run_command")
     def test_error_01(self, mocked_run):
@@ -118,7 +137,7 @@ class TestPrepRunDPOptim(unittest.TestCase):
             shutil.rmtree(Path(self.task_name))
 
         def side_effect(*args, **kwargs):
-            for i in range(5):
+            for i in range(1, 6):
                 Path().joinpath(f"CONTCAR_{str(i)}").write_text(f"CONTCAR_{str(i)}")
                 Path().joinpath(f"OUTCAR_{str(i)}").write_text(f"OUTCAR_{str(i)}")
                 Path().joinpath(f"{str(i)}.traj").write_text(f"{str(i)}.traj")

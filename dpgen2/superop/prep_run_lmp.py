@@ -139,7 +139,6 @@ def _prep_run_lmp(
     run_config = deepcopy(run_config)
     prep_template_config = prep_config.pop("template_config")
     run_template_config = run_config.pop("template_config")
-    run_template_config.pop("caly_config")
     prep_executor = init_executor(prep_config.pop("executor"))
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})

@@ -275,9 +275,6 @@ class TestPrepRunLmp(unittest.TestCase):
             prep_config=default_config,
             run_config=default_config,
         )
-        print(steps)
-        print(steps.input_parameters)
-        print(steps.input_artifacts)
         prep_run_step = Step(
             "prep-run-step",
             template=steps,
