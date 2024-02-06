@@ -58,6 +58,7 @@ class CalyEvoStep(Steps):
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
         self._input_parameters = {
+            "iter_num": InputParameter(type=int, value=0),
             "block_id": InputParameter(type=str, value=""),
             "task_name": InputParameter(type=str),
         }
@@ -91,13 +92,13 @@ class CalyEvoStep(Steps):
         )
 
         # self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
-        self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
+        import numpy as np
+        self.collect_run_calypso_keys = ["collect-run-calypso--%06d" % np.random.randint(1, 9999) for i in range(10)]
+        self.prep_run_dp_optim_keys = ["prep-run-dp-optim--%06d" % np.random.randint(1, 9999) for i in range(10)]
+        self._keys = self.collect_run_calypso_keys + self.prep_run_dp_optim_keys
         self.step_keys = {}
-        # ii = "collect-run-calypso-{{item}}"
-        ii = "collect-run-calypso"
-        self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
-        ii = "prep-run-dp-optim"
-        self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
+        for ii in self._keys:
+            self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
 
         self = _caly_evo_step(
             self,
@@ -167,7 +168,7 @@ def _caly_evo_step(
             "opt_results_dir": caly_evo_step_steps.inputs.artifacts["opt_results_dir"],
         },
         # key=step_keys["collect-run-calypso-{{item}}"],
-        key=step_keys["collect-run-calypso"],
+        key="collect-run-calypso-%s-%s" % (caly_evo_step_steps.inputs.parameters["iter_num"], caly_evo_step_steps.inputs.parameters["block_id"]),
         executor=prep_executor,
         **run_config,
     )
@@ -195,9 +196,9 @@ def _caly_evo_step(
                 "caly_check_opt_file"
             ],
         },
-        key=step_keys["prep-run-dp-optim"],
+        key="prep-run-dp-optim-%s-%s" % (caly_evo_step_steps.inputs.parameters["iter_num"], caly_evo_step_steps.inputs.parameters["block_id"]),
         executor=prep_executor,  # cpu is enough to run calypso.x, default step config is c2m4
-        when="%s == False" % (collect_run_calypso.outputs.parameters["finished"]),
+        when="%s == false" % (collect_run_calypso.outputs.parameters["finished"]),
         **run_config,
     )
     caly_evo_step_steps.add(prep_run_dp_optim)
@@ -207,6 +208,7 @@ def _caly_evo_step(
         name=name + "-nextstep",
         template=caly_evo_step_steps,
         parameters={
+            "iter_num": caly_evo_step_steps.inputs.parameters["iter_num"] + 1,
             "block_id": caly_evo_step_steps.inputs.parameters["block_id"],
             "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
         },
@@ -220,16 +222,20 @@ def _caly_evo_step(
             "caly_run_opt_file": prep_run_dp_optim.outputs.artifacts["caly_run_opt_file"],  # input.dat
             "caly_check_opt_file": prep_run_dp_optim.outputs.artifacts["caly_check_opt_file"],  # input.dat
             },
-        when="%s == False" % (collect_run_calypso.outputs.parameters["finished"]),
+        when="%s == false" % (collect_run_calypso.outputs.parameters["finished"]),
     )
     caly_evo_step_steps.add(next_step)
 
     caly_evo_step_steps.outputs.parameters[
         "task_name"
-    ]._value_from_parameter = collect_run_calypso.outputs.parameters["task_name"],
+    ]._value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
 
     caly_evo_step_steps.outputs.artifacts[
         "traj_result"
-    ]._from = prep_run_dp_optim.outputs.artifacts["traj_results_dir"]
+    ].from_expression = if_expression(
+        _if=(collect_run_calypso.outputs.parameters["finished"] == "false"),
+        _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
+        _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
+    )
 
     return caly_evo_step_steps

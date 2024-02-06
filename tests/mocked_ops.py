@@ -960,6 +960,8 @@ class MockedCollRunCaly(CollRunCaly):
         command = config.get("run_calypso_command", "calypso.x")
         # input.dat
         input_file = ip["input_file"].resolve()
+        max_step = Path(input_file).read_text().strip()
+
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
         work_dir.mkdir(exist_ok=True, parents=True)
@@ -977,17 +979,38 @@ class MockedCollRunCaly(CollRunCaly):
 
         for i in range(5):
             Path(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
-        Path("step").write_text("3")
-        Path("results").mkdir(parents=True, exist_ok=True)
-        Path("results/pso_ini_1").write_text("pso_ini_1")
-        Path("results/pso_opt_1").write_text("pso_opt_1")
+
+        if "none" in step.name:
+            Path("step").write_text("2")
+        else:
+            step_num = Path("step").read_text().strip()
+            Path("step").write_text(f"{int(step_num)+1}")
+
+        step_num = int(Path("step").read_text().strip())
+
+        if "none" in results.name:
+            Path("results").mkdir(parents=True, exist_ok=True)
+            for i in range(1, step_num):
+                Path(f"results/pso_ini_{i}").write_text(f"pso_ini_{i}")
+                Path(f"results/pso_opt_{i}").write_text(f"pso_opt_{i}")
+                Path(f"results/pso_sor_{i}").write_text(f"pso_sor_{i}")
+        else:
+            i = step_num
+            Path(f"results/pso_ini_{i}").write_text(f"pso_ini_{i}")
+            Path(f"results/pso_opt_{i}").write_text(f"pso_opt_{i}")
+            Path(f"results/pso_sor_{i}").write_text(f"pso_sor_{i}")
+
 
         poscar_dir = Path("poscar_dir")
         poscar_dir.mkdir(parents=True, exist_ok=True)
         for poscar in Path().glob("POSCAR_*"):
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
-        finished = str(True)
+        finished = "true" if int(step_num) == int(max_step) + 1 else "false"
+        print(f"-------------step_num: {step_num}, -------max_step---:{max_step}")
+        print(f"-------------finished: {finished}")
+        fake_traj_dir = Path("traj_results_dir")
+        fake_traj_dir.mkdir(parents=True, exist_ok=True)
 
         os.chdir(cwd)
         ret_dict = {
@@ -997,6 +1020,7 @@ class MockedCollRunCaly(CollRunCaly):
             "input_file": work_dir.joinpath(input_file.name),
             "results": work_dir.joinpath("results"),
             "step": work_dir.joinpath("step"),
+            "fake_traj_results_dir": work_dir.joinpath(fake_traj_dir),
         }
         return OPIO(ret_dict)
 
@@ -1069,3 +1093,4 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
                 "caly_check_opt_file": work_dir / caly_check_opt_file.name,
             }
         )
+

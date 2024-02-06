@@ -122,7 +122,7 @@ class TestMockedCollRunCaly(unittest.TestCase):
         self.file_storage = Path("temp_file_storage")
         self.file_storage.mkdir(parents=True, exist_ok=True)
         self.input_file = self.file_storage.joinpath("input.dat")
-        self.input_file.write_text("input.dat")
+        self.input_file.write_text("5")
         self.step_file = self.file_storage.joinpath("step_none")
         self.step_file.write_text("step_none")
         self.results_dir = self.file_storage.joinpath("results_none")
@@ -237,7 +237,7 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
 
 
 # @unittest.skip("temporary pass")
-@unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
+# @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
 class TestCalyEvoStep(unittest.TestCase):
     def setUp(self):
         self.work_dir = Path("storge_files")
@@ -256,7 +256,7 @@ class TestCalyEvoStep(unittest.TestCase):
         self.task_name = temp_name_pattern % 1
 
         input_file = self.work_dir.joinpath("input.dat")
-        input_file.write_text("input.dat")
+        input_file.write_text("2")
         self.input_file = upload_artifact(input_file)
 
         step_file = self.work_dir.joinpath("step-none")
@@ -334,3 +334,5 @@ class TestCalyEvoStep(unittest.TestCase):
 
         # for ii in step.outputs.parameters["task_names"].value:
         #     self.check_run_lmp_output(ii, self.model_list)
+
+
