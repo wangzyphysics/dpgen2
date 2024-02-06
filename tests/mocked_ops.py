@@ -68,23 +68,23 @@ from dpgen2.fp.vasp import (
 from dpgen2.op.collect_data import (
     CollectData,
 )
+from dpgen2.op.collect_run_caly import (
+    CollRunCaly,
+)
 from dpgen2.op.prep_dp_train import (
     PrepDPTrain,
 )
 from dpgen2.op.prep_lmp import (
     PrepExplorationTaskGroup,
 )
+from dpgen2.op.prep_run_dp_optim import (
+    PrepRunDPOptim,
+)
 from dpgen2.op.run_dp_train import (
     RunDPTrain,
 )
 from dpgen2.op.run_lmp import (
     RunLmp,
-)
-from dpgen2.op.collect_run_caly import (
-    CollRunCaly,
-)
-from dpgen2.op.prep_run_dp_optim import (
-    PrepRunDPOptim,
 )
 from dpgen2.op.select_confs import (
     SelectConfs,
@@ -953,7 +953,6 @@ class MockedCollRunCaly(CollRunCaly):
         self,
         ip: OPIO,
     ) -> OPIO:
-
         cwd = os.getcwd()
         config = ip["config"] if ip["config"] is not None else {}
         # config = CollRunCaly.normalize_config(config)
@@ -972,7 +971,11 @@ class MockedCollRunCaly(CollRunCaly):
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
-        if "none" not in step.name and "none" not in results.name and "none" not in opt_results_dir.name:
+        if (
+            "none" not in step.name
+            and "none" not in results.name
+            and "none" not in opt_results_dir.name
+        ):
             Path(step.name).symlink_to(step)
             Path(results.name).symlink_to(results)
             Path(opt_results_dir.name).symlink_to(opt_results_dir)
@@ -1007,8 +1010,8 @@ class MockedCollRunCaly(CollRunCaly):
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
         finished = "true" if int(step_num) == int(max_step) + 1 else "false"
-        print(f"-------------step_num: {step_num}, -------max_step---:{max_step}")
-        print(f"-------------finished: {finished}")
+        # print(f"-------------step_num: {step_num}, -------max_step---:{max_step}")
+        # print(f"-------------finished: {finished}")
         fake_traj_dir = Path("traj_results_dir")
         fake_traj_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1031,7 +1034,6 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
         self,
         ip: OPIO,
     ) -> OPIO:
-
         cwd = os.getcwd()
 
         work_dir = Path(ip["task_name"])
@@ -1041,10 +1043,7 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
         models_dir = ip["models_dir"]
         caly_run_opt_file = ip["caly_run_opt_file"].resolve()
         caly_check_opt_file = ip["caly_check_opt_file"].resolve()
-        poscar_list = [
-            poscar.resolve()
-            for poscar in poscar_dir.rglob("POSCAR_*")
-        ]
+        poscar_list = [poscar.resolve() for poscar in poscar_dir.rglob("POSCAR_*")]
         model_list = [model.resolve() for model in models_dir.rglob("*model*pb")]
         model_list = sorted(model_list, key=lambda x: str(x).split(".")[1])
         model_file = model_list[0]

@@ -215,7 +215,9 @@ def _caly_evo_step(
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
             # "input_file_list": caly_evo_step_steps.inputs.artifacts["input_file_list"],  # input.dat
-            "input_file": collect_run_calypso.outputs.artifacts["input_file"],  # input.dat
+            "input_file": collect_run_calypso.outputs.artifacts[
+                "input_file"
+            ],  # input.dat
             "results": collect_run_calypso.outputs.artifacts["results"],
             "step": collect_run_calypso.outputs.artifacts["step"],
             "opt_results_dir": prep_run_dp_optim.outputs.artifacts["optim_results_dir"],
@@ -228,7 +230,7 @@ def _caly_evo_step(
 
     caly_evo_step_steps.outputs.parameters[
         "task_name"
-    ]._value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
+    ].value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
 
     caly_evo_step_steps.outputs.artifacts[
         "traj_result"

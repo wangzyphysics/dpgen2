@@ -50,20 +50,6 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from .context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from .mocked_ops import (
-    MockedRunLmp,
-    mocked_numb_models,
-    MockedCollRunCaly,
-    MockedPrepRunDPOptim,
-)
-
 from dpgen2.constants import (
     lmp_conf_name,
     lmp_input_name,
@@ -102,6 +88,8 @@ from .context import (
     upload_python_packages,
 )
 from .mocked_ops import (
+    MockedCollRunCaly,
+    MockedPrepRunDPOptim,
     MockedRunLmp,
     mocked_numb_models,
 )
@@ -151,15 +139,18 @@ class TestMockedCollRunCaly(unittest.TestCase):
         )
 
         self.assertTrue(out["task_name"] == self.task_name)
-        self.assertTrue(out["finished"] == str(True))
-        self.assertTrue(Path("task_name/poscar_dir").joinpath("POSCAR_1") in list(out["poscar_dir"].glob("POSCAR_*")))
+        self.assertTrue(out["finished"] == "false")
+        self.assertTrue(
+            Path("task_name/poscar_dir").joinpath("POSCAR_1")
+            in list(out["poscar_dir"].glob("POSCAR_*"))
+        )
         self.assertTrue(len(list(out["poscar_dir"].rglob("POSCAR_*"))) == 5)
         self.assertTrue(
             out["input_file"] == Path(self.task_name).joinpath(self.input_file.name)
         )
-        self.assertTrue(out["input_file"].read_text() == "input.dat")
+        self.assertTrue(out["input_file"].read_text() == str(5))
         self.assertTrue(out["step"] == Path(self.task_name).joinpath("step"))
-        self.assertTrue(out["step"].read_text() == "3")
+        self.assertTrue(out["step"].read_text() == str(2))
         self.assertTrue(out["results"] == Path(self.task_name).joinpath("results"))
 
 
@@ -237,7 +228,7 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
 
 
 # @unittest.skip("temporary pass")
-# @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
+@unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
 class TestCalyEvoStep(unittest.TestCase):
     def setUp(self):
         self.work_dir = Path("storge_files")
@@ -280,15 +271,11 @@ class TestCalyEvoStep(unittest.TestCase):
         self.caly_check_opt_file = upload_artifact(caly_check_opt_file)
 
     def tearDown(self):
-        pass
-        # for ii in range(self.nmodels):
-        #     model = Path(f"model{ii}.pb")
-        #     if model.is_file():
-        #         os.remove(model)
-        # for ii in range(self.ngrp * self.ntask_per_grp):
-        #     work_path = Path(f"task.{ii:06d}")
-        #     if work_path.is_dir():
-        #         shutil.rmtree(work_path)
+        shutil.rmtree(self.work_dir, ignore_errors=True)
+        for i in Path().glob("caly-evo-step-*"):
+            shutil.rmtree(i, ignore_errors=True)
+        shutil.rmtree("upload", ignore_errors=True)
+
 
     def test(self):
         steps = CalyEvoStep(
@@ -324,9 +311,9 @@ class TestCalyEvoStep(unittest.TestCase):
         # while wf.query_status() in ["Pending", "Running"]:
         #     time.sleep(4)
 
-        # self.assertEqual(wf.query_status(), "Succeeded")
-        # step = wf.query_step(name="prep-run-step")[0]
-        # self.assertEqual(step.phase, "Succeeded")
+        self.assertEqual(wf.query_status(), "Succeeded")
+        step = wf.query_step(name="caly-evo-step")[0]
+        self.assertEqual(step.phase, "Succeeded")
 
         # download_artifact(step.outputs.artifacts["model_devis"])
         # download_artifact(step.outputs.artifacts["trajs"])

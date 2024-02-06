@@ -13,10 +13,10 @@ from typing import (
 from dflow.python import (
     OP,
     OPIO,
-    Parameter,
     Artifact,
     BigParameter,
     OPIOSign,
+    Parameter,
     TransientError,
 )
 
@@ -52,7 +52,9 @@ class PrepRunDPOptim(OP):
             {
                 "config": BigParameter(dict),
                 "task_name": Parameter(str),  # calypso_task.idx
-                "poscar_dir": Artifact(Path),  # from run_calypso first, then from collect_run_caly
+                "poscar_dir": Artifact(
+                    Path
+                ),  # from run_calypso first, then from collect_run_caly
                 "models_dir": Artifact(Path),  #
                 "caly_run_opt_file": Artifact(Path),  # from prep_caly_input
                 "caly_check_opt_file": Artifact(Path),  # from prep_caly_input
@@ -107,10 +109,7 @@ class PrepRunDPOptim(OP):
         _caly_check_opt_file = ip["caly_check_opt_file"]
         caly_run_opt_file = _caly_run_opt_file.resolve()
         caly_check_opt_file = _caly_check_opt_file.resolve()
-        poscar_list = [
-            poscar.resolve()
-            for poscar in poscar_dir.rglob("POSCAR_*")
-        ]
+        poscar_list = [poscar.resolve() for poscar in poscar_dir.rglob("POSCAR_*")]
         model_list = [model.resolve() for model in models_dir.rglob("*model*pb")]
         model_list = sorted(model_list, key=lambda x: str(x).split(".")[1])
         model_file = model_list[0]

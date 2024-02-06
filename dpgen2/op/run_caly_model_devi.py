@@ -26,8 +26,8 @@ from dflow.python import (
     OP,
     OPIO,
     Artifact,
-    OPIOSign,
     BigParameter,
+    OPIOSign,
     Parameter,
 )
 

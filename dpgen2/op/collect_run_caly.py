@@ -25,9 +25,9 @@ from dflow.python import (
     OPIO,
     Artifact,
     BigParameter,
-    Parameter,
     FatalError,
     OPIOSign,
+    Parameter,
     TransientError,
 )
 
