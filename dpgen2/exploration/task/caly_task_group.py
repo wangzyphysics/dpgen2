@@ -6,10 +6,10 @@ from typing import (
 )
 
 from dpgen2.constants import (
+    calypso_input_file,
     lmp_conf_name,
     lmp_input_name,
     model_name_pattern,
-    calypso_input_file,
 )
 
 from .calypso import (
@@ -19,8 +19,8 @@ from .task import (
     ExplorationTask,
 )
 from .task_group import (
-    ExplorationTaskGroup,
     BaseExplorationTaskGroup,
+    ExplorationTaskGroup,
 )
 
 
