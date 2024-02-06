@@ -213,20 +213,26 @@ def _caly_evo_step(
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
             # "input_file_list": caly_evo_step_steps.inputs.artifacts["input_file_list"],  # input.dat
-            "input_file": collect_run_calypso.outputs.artifacts["input_file"],  # input.dat
+            "input_file": collect_run_calypso.outputs.artifacts[
+                "input_file"
+            ],  # input.dat
             "results": collect_run_calypso.outputs.artifacts["results"],
             "step": collect_run_calypso.outputs.artifacts["step"],
             "opt_results_dir": prep_run_dp_optim.outputs.artifacts["optim_results_dir"],
-            "caly_run_opt_file": prep_run_dp_optim.outputs.artifacts["caly_run_opt_file"],  # input.dat
-            "caly_check_opt_file": prep_run_dp_optim.outputs.artifacts["caly_check_opt_file"],  # input.dat
-            },
+            "caly_run_opt_file": prep_run_dp_optim.outputs.artifacts[
+                "caly_run_opt_file"
+            ],  # input.dat
+            "caly_check_opt_file": prep_run_dp_optim.outputs.artifacts[
+                "caly_check_opt_file"
+            ],  # input.dat
+        },
         when="%s == False" % (collect_run_calypso.outputs.parameters["finished"]),
     )
     caly_evo_step_steps.add(next_step)
 
-    caly_evo_step_steps.outputs.parameters[
-        "task_name"
-    ]._value_from_parameter = collect_run_calypso.outputs.parameters["task_name"],
+    caly_evo_step_steps.outputs.parameters["task_name"]._value_from_parameter = (
+        collect_run_calypso.outputs.parameters["task_name"],
+    )
 
     caly_evo_step_steps.outputs.artifacts[
         "traj_result"

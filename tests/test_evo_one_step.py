@@ -50,20 +50,6 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from .context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from .mocked_ops import (
-    MockedRunLmp,
-    mocked_numb_models,
-    MockedCollRunCaly,
-    MockedPrepRunDPOptim,
-)
-
 from dpgen2.constants import (
     lmp_conf_name,
     lmp_input_name,
@@ -102,6 +88,8 @@ from .context import (
     upload_python_packages,
 )
 from .mocked_ops import (
+    MockedCollRunCaly,
+    MockedPrepRunDPOptim,
     MockedRunLmp,
     mocked_numb_models,
 )
@@ -152,7 +140,10 @@ class TestMockedCollRunCaly(unittest.TestCase):
 
         self.assertTrue(out["task_name"] == self.task_name)
         self.assertTrue(out["finished"] == str(True))
-        self.assertTrue(Path("task_name/poscar_dir").joinpath("POSCAR_1") in list(out["poscar_dir"].glob("POSCAR_*")))
+        self.assertTrue(
+            Path("task_name/poscar_dir").joinpath("POSCAR_1")
+            in list(out["poscar_dir"].glob("POSCAR_*"))
+        )
         self.assertTrue(len(list(out["poscar_dir"].rglob("POSCAR_*"))) == 5)
         self.assertTrue(
             out["input_file"] == Path(self.task_name).joinpath(self.input_file.name)
