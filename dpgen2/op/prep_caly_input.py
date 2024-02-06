@@ -17,10 +17,10 @@ from dflow.python import (
 )
 
 from dpgen2.constants import (
-    calypso_input_file,
-    calypso_task_pattern,
-    calypso_run_opt_file,
     calypso_check_opt_file,
+    calypso_input_file,
+    calypso_run_opt_file,
+    calypso_task_pattern,
     model_name_pattern,
 )
 from dpgen2.exploration.task import (
@@ -114,16 +114,16 @@ def Write_Outcar(outcar, element, ele, volume, lat, pos, ene, force, stress, pst
     f.write('-------------------------------------------------------------------\\n')
     na = sum(ele.values())
     for i in range(na):
-        f.write('%15.6f %15.6f %15.6f' % tuple(pos[i])) 
+        f.write('%15.6f %15.6f %15.6f' % tuple(pos[i]))
         f.write('%15.6f %15.6f %15.6f\\n' % tuple(force[i]))
     f.write('-------------------------------------------------------------------\\n')
     f.write('energy  without entropy= %20.6f %20.6f\\n' % (ene, ene/na))
-    enthalpy = ene + pstress * volume / 1602.17733      
+    enthalpy = ene + pstress * volume / 1602.17733
     f.write('enthalpy is  TOTEN    = %20.6f %20.6f\\n' % (enthalpy, enthalpy/na))
 
 def run_opt(fmax, stress):
     '''Using the ASE&DP to Optimize Configures'''
-    
+
     calc = DP(model='frozen_model.pb')    # init the model before iteration
 
     Opt_Step = 1000
@@ -387,7 +387,9 @@ class PrepCalyInput(OP):
         for caly_input in caly_inputs:
             update = caly_input.pop("UpDate", True)
             if update:
-                for key in necessary_keys.keys():  # All necessary keys must be included or raise.
+                for key in (
+                    necessary_keys.keys()
+                ):  # All necessary keys must be included or raise.
                     necessary_keys[key] = caly_input.pop(key)
                 default_key_value.update(caly_input)
                 default_key_value.update(necessary_keys)
@@ -395,7 +397,9 @@ class PrepCalyInput(OP):
                 default_key_value = caly_input
 
             tname = Path(calypso_task_pattern % cc)
-            input_file, caly_run_opt_file, caly_check_opt_file = _mk_task_from_dict(default_key_value, tname)
+            input_file, caly_run_opt_file, caly_check_opt_file = _mk_task_from_dict(
+                default_key_value, tname
+            )
             cc += 1
 
             task_names.append(str(tname))
@@ -435,7 +439,11 @@ def _mk_task_from_dict(mapping, tname):
 
         fmax = mapping.get("fmax", 0.01)
         pstress = mapping.get("PSTRESS", 0)
-        Path(calypso_run_opt_file).write_text(calypso_run_opt_str + calypso_run_opt_str_end % (fmax, pstress))
+        Path(calypso_run_opt_file).write_text(
+            calypso_run_opt_str + calypso_run_opt_str_end % (fmax, pstress)
+        )
         Path(calypso_check_opt_file).write_text(calypso_check_opt_str)
 
-    return tname.joinpath(calypso_input_file), tname.joinpath(calypso_run_opt_file), tname.joinpath(calypso_check_opt_file)
+    return tname.joinpath(calypso_input_file), tname.joinpath(
+        calypso_run_opt_file
+    ), tname.joinpath(calypso_check_opt_file)

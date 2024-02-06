@@ -25,8 +25,8 @@ from dflow import (
     argo_len,
     argo_range,
     argo_sequence,
-    if_expression,
     download_artifact,
+    if_expression,
     upload_artifact,
 )
 from dflow.python import (

@@ -27,7 +27,6 @@ from dpgen2.constants import (
     calypso_task_pattern,
     calypso_input_file,
     calypso_log_name,
-
 )
 from dpgen2.op.collect_run_caly import CollRunCaly, get_max_step
 from dpgen2.utils import (
@@ -100,12 +99,13 @@ class TestCollRunCaly(unittest.TestCase):
                     "step": self.step_file,
                     "results": self.results_dir,
                     "opt_results_dir": self.opt_results_dir,
-
                 }
             )
         )
         # check output
-        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none"))
+        self.assertEqual(
+            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none")
+        )
         self.assertEqual(out["task_name"], self.task_name)
         self.assertEqual(out["input_file"], self.input_file)
         self.assertEqual(out["step"], Path(self.task_name) / "step")
@@ -135,12 +135,13 @@ class TestCollRunCaly(unittest.TestCase):
                     "step": self.step_file,
                     "results": self.results_dir,
                     "opt_results_dir": self.opt_results_dir,
-
                 }
             )
         )
         # check output
-        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none"))
+        self.assertEqual(
+            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none")
+        )
         self.assertEqual(out["finished"], "False")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
@@ -166,7 +167,6 @@ class TestCollRunCaly(unittest.TestCase):
                     "step": self.step_file,
                     "results": self.results_dir,
                     "opt_results_dir": self.opt_results_dir,
-
                 }
             )
         )
@@ -200,7 +200,6 @@ class TestCollRunCaly(unittest.TestCase):
                     "step": self.step_file,
                     "results": self.results_dir,
                     "opt_results_dir": self.opt_results_dir,
-
                 }
-            )
+            ),
         )

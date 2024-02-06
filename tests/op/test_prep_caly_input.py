@@ -28,7 +28,6 @@ from dpgen2.constants import (
     calypso_input_file,
     calypso_run_opt_file,
     calypso_check_opt_file,
-
 )
 from dpgen2.op.prep_caly_input import PrepCalyInput
 from dpgen2.utils import (
@@ -144,9 +143,12 @@ VSC = T
         self.assertEqual(out["caly_run_opt_files"], self.caly_run_opt_list)
         self.assertEqual(out["caly_check_opt_files"], self.caly_check_opt_list)
         # check files details
-        self.assertEqual(self.input_dat_list[0].read_text().strip("\n"), self.input_1_ref.strip("\n"))
-        self.assertEqual(self.input_dat_list[1].read_text().strip("\n"), self.input_2_ref.strip("\n"))
-
+        self.assertEqual(
+            self.input_dat_list[0].read_text().strip("\n"), self.input_1_ref.strip("\n")
+        )
+        self.assertEqual(
+            self.input_dat_list[1].read_text().strip("\n"), self.input_2_ref.strip("\n")
+        )
 
         # # check input files are correctly linked
         # self.assertEqual((work_dir / lmp_conf_name).read_text(), "foo")
@@ -155,6 +157,7 @@ VSC = T
         #     self.assertEqual(
         #         (work_dir / (model_name_pattern % ii)).read_text(), f"model{ii}"
         #     )
+
 
 #     def test_error(self, mocked_run):
 #         mocked_run.side_effect = [(1, "foo\n", "")]
@@ -178,4 +181,4 @@ VSC = T
 #             ),
 #         ]
 #         mocked_run.assert_has_calls(calls)
-# 
+#
