@@ -23,6 +23,12 @@ from dflow import (
     Outputs,
     Step,
     Steps,
+    Workflow,
+    argo_len,
+    argo_range,
+    argo_sequence,
+    download_artifact,
+    upload_artifact,
 )
 from dflow.python import (
     OP,
@@ -170,27 +176,49 @@ def _prep_run_caly(
     # collect traj dirs
     caly_evo_step = Step(
         name="caly-evo-step",
-        template=caly_evo_step_op,
+        template=PythonOPTemplate(
+            caly_evo_step_op,
+            slices=Slices(
+                "int('{{item}}')",
+                input_parameter=["task_name"],
+                input_artifact=[
+                    "input_file",
+                    "results",
+                    "step",
+                    "opt_results_dir",
+                    "caly_run_opt_file",
+                    "caly_check_opt_file",
+                ],
+                output_artifact=["task_name", "traj_result"],
+                **run_template_config,
+            ),
+            python_packages=upload_python_packages,
+            **run_template_config,
+        ),
         parameters={
             "block_id": prep_run_caly_steps.inputs.parameters["block_id"],
-            "task_name_list": prep_caly_input.outputs.parameters["task_names"],
+            "task_name": prep_caly_input.outputs.parameters["task_names"],
         },
         artifacts={
             "models": prep_run_caly_steps.inputs.artifacts["models"],
-            "input_file_list": prep_caly_input.outputs.artifacts["input_dat_files"],
-            "caly_run_opt_files": prep_caly_input.outputs.artifacts[
+            "input_file": prep_caly_input.outputs.artifacts["input_dat_files"],
+            "caly_run_opt_file": prep_caly_input.outputs.artifacts[
                 "caly_run_opt_files"
             ],
-            "caly_check_opt_files": prep_caly_input.outputs.artifacts[
+            "caly_check_opt_file": prep_caly_input.outputs.artifacts[
                 "caly_check_opt_files"
             ],
-            "results_list": temp_value,
-            "step_list": temp_value,
-            "opt_results_dir_list": temp_value,
+            "results": temp_value,
+            "step": temp_value,
+            "opt_results_dir": temp_value,
         },
         key=step_keys["caly-evo-step"],
-        # executor=prep_executor,
-        # **prep_config,
+        with_sequence=argo_sequence(
+            argo_len(prep_caly_input.outputs.parameters["task_names"]),
+            format=calypso_index_pattern,
+        ),
+        executor=prep_executor,
+        **prep_config,
     )
     prep_run_caly_steps.add(caly_evo_step)
 
@@ -199,7 +227,6 @@ def _prep_run_caly(
         "run-caly-model-devi",
         template=PythonOPTemplate(
             run_caly_model_devi_op,
-            output_artifact_archive={},
             python_packages=upload_python_packages,
             **prep_template_config,
         ),
@@ -219,7 +246,7 @@ def _prep_run_caly(
 
     prep_run_caly_steps.outputs.parameters[
         "task_names"
-    ]._value_from_parameter = run_caly_model_devi.outputs.parameters["task_name"]
+    ].value_from_parameter = run_caly_model_devi.outputs.parameters["task_name"]
     prep_run_caly_steps.outputs.artifacts[
         "trajs"
     ]._from = run_caly_model_devi.outputs.artifacts["traj"]
