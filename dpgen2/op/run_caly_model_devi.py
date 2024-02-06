@@ -18,6 +18,8 @@ from dflow.python import (
     OPIO,
     Artifact,
     OPIOSign,
+    BigParameter,
+    Parameter,
 )
 
 
@@ -38,8 +40,8 @@ class RunCalyModelDevi(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "type_map": List[str],
-                "task_name": str,
+                "type_map": BigParameter(List[str]),
+                "task_name": Parameter(str),
                 "traj_dirs": Artifact(List[Path]),
                 "models": Artifact(List[Path]),
             }
@@ -49,7 +51,7 @@ class RunCalyModelDevi(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "task_name": str,
+                "task_name": Parameter(str),
                 "traj": Artifact(Path),
                 "model_devi": Artifact(Path),
             }

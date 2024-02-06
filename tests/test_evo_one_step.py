@@ -59,6 +59,8 @@ from .context import (
 from .mocked_ops import (
     MockedRunLmp,
     mocked_numb_models,
+    MockedCollRunCaly,
+    MockedPrepRunDPOptim,
 )
 
 from dpgen2.constants import (
@@ -100,63 +102,6 @@ default_config = normalize_step_dict(
 )
 
 
-class MockedCollRunCaly(CollRunCaly):
-    @OP.exec_sign_check
-    def execute(
-        self,
-        ip: OPIO,
-    ) -> OPIO:
-
-        print(f"----------------in mockedCollRunCaly: ip:{ip}")
-        cwd = os.getcwd()
-        config = ip["config"] if ip["config"] is not None else {}
-        config = CollRunCaly.normalize_config(config)
-        command = config.get("run_calypso_command", "calypso.x")
-        # input.dat
-        input_file = ip["input_file"].resolve()
-        # work_dir name: calypso_task.idx
-        work_dir = Path(ip["task_name"])
-        work_dir.mkdir(exist_ok=True, parents=True)
-
-        step = ip["step"].resolve()
-        results = ip["results"].resolve()
-        opt_results_dir = ip["opt_results_dir"].resolve()
-
-        os.chdir(work_dir)
-        Path(input_file.name).symlink_to(input_file)
-        if "none" not in step.name and "none" not in results.name and "none" not in opt_results_dir.name:
-            Path(step.name).symlink_to(step)
-            Path(results.name).symlink_to(results)
-            Path(opt_results_dir.name).symlink_to(opt_results_dir)
-
-        for i in range(5):
-            Path(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
-        Path("step").write_text("3")
-        Path("results").mkdir(parents=True, exist_ok=True)
-        Path("results/pso_ini_1").write_text("pso_ini_1")
-        Path("results/pso_opt_1").write_text("pso_opt_1")
-
-        poscar_dir = Path("poscar_dir")
-        poscar_dir.mkdir(parents=True, exist_ok=True)
-        for poscar in Path().glob("POSCAR_*"):
-            target = poscar_dir.joinpath(poscar.name)
-            shutil.copyfile(poscar, target)
-        finished = str(False)
-
-        os.chdir(cwd)
-        print("----------------done mockedCollRunCaly")
-        ret_dict = {
-            "task_name": work_dir.name,
-            "finished": finished,
-            "poscar_dir": work_dir.joinpath(poscar_dir),
-            "input_file": work_dir.joinpath(input_file.name),
-            "results": work_dir.joinpath("results"),
-            "step": work_dir.joinpath("step"),
-        }
-        return OPIO(ret_dict)
-
-
-@unittest.skip("temp")
 class TestMockedCollRunCaly(unittest.TestCase):
     def setUp(self) -> None:
         self.config = {}
@@ -194,7 +139,7 @@ class TestMockedCollRunCaly(unittest.TestCase):
         )
 
         self.assertTrue(out["task_name"] == self.task_name)
-        self.assertTrue(out["finished"] == self.finished)
+        self.assertTrue(out["finished"] == str(True))
         self.assertTrue(Path("task_name/poscar_dir").joinpath("POSCAR_1") in list(out["poscar_dir"].glob("POSCAR_*")))
         self.assertTrue(len(list(out["poscar_dir"].rglob("POSCAR_*"))) == 5)
         self.assertTrue(out["input_file"] == Path(self.task_name).joinpath(self.input_file.name))
@@ -204,79 +149,6 @@ class TestMockedCollRunCaly(unittest.TestCase):
         self.assertTrue(out["results"] == Path(self.task_name).joinpath("results"))
 
 
-class MockedPrepRunDPOptim(PrepRunDPOptim):
-    @OP.exec_sign_check
-    def execute(
-        self,
-        ip: OPIO,
-    ) -> OPIO:
-
-        print("----------------start mockedPrepRunDPOptim")
-        cwd = os.getcwd()
-
-        work_dir = Path(ip["task_name"])
-        work_dir.mkdir(parents=True, exist_ok=True)
-
-        poscar_dir = ip["poscar_dir"]
-        models_dir = ip["models_dir"]
-        caly_run_opt_file = ip["caly_run_opt_file"].resolve()
-        caly_check_opt_file = ip["caly_check_opt_file"].resolve()
-        poscar_list = [
-            poscar.resolve()
-            for poscar in poscar_dir.iterdir()
-        ]
-        model_list = [model.resolve() for model in models_dir.iterdir()]
-        model_list = sorted(model_list, key=lambda x: str(x).split(".")[1])
-        model_file = model_list[0]
-
-        config = ip["config"] if ip["config"] is not None else {}
-        command = config.get("run_opt_command", "python -u calypso_run_opt.py")
-
-        os.chdir(work_dir)
-
-        for idx, poscar in enumerate(poscar_list):
-            Path(poscar.name).symlink_to(poscar)
-        Path("frozen_model.pb").symlink_to(model_file)
-        Path(caly_run_opt_file.name).symlink_to(caly_run_opt_file)
-        Path(caly_check_opt_file.name).symlink_to(caly_check_opt_file)
-
-        for i in range(1, 6):
-            Path().joinpath(f"CONTCAR_{str(i)}").write_text(f"CONTCAR_{str(i)}")
-            Path().joinpath(f"OUTCAR_{str(i)}").write_text(f"OUTCAR_{str(i)}")
-            Path().joinpath(f"{str(i)}.traj").write_text(f"{str(i)}.traj")
-
-        optim_results_dir = Path("optim_results_dir")
-        optim_results_dir.mkdir(parents=True, exist_ok=True)
-        for poscar in Path().glob("POSCAR_*"):
-            target = optim_results_dir.joinpath(poscar.name)
-            shutil.copyfile(poscar, target)
-        for contcar in Path().glob("CONTCAR_*"):
-            target = optim_results_dir.joinpath(contcar.name)
-            shutil.copyfile(contcar, target)
-        for outcar in Path().glob("OUTCAR_*"):
-            target = optim_results_dir.joinpath(outcar.name)
-            shutil.copyfile(outcar, target)
-
-        traj_results_dir = Path("traj_results_dir")
-        traj_results_dir.mkdir(parents=True, exist_ok=True)
-        for traj in Path().glob("*.traj"):
-            target = traj_results_dir.joinpath(traj.name)
-            shutil.copyfile(traj, target)
-
-        os.chdir(cwd)
-        print("----------------done mockedPrepRunDPOptim")
-        return OPIO(
-            {
-                "task_name": str(work_dir),
-                "optim_results_dir": work_dir / optim_results_dir,
-                "traj_results_dir": work_dir / traj_results_dir,
-                "caly_run_opt_file": work_dir / caly_run_opt_file.name,
-                "caly_check_opt_file": work_dir / caly_check_opt_file.name,
-            }
-        )
-
-
-@unittest.skip("temp")
 class TestMockedPrepRunDPOptim(unittest.TestCase):
     def setUp(self) -> None:
         self.config = {}
@@ -348,56 +220,38 @@ class TestCalyEvoStep(unittest.TestCase):
         self.nmodels = mocked_numb_models
         self.model_list = []
         for ii in range(self.nmodels):
-            model = self.work_dir.joinpath(f"model{ii}.pb")
+            model = self.work_dir.joinpath(f"model.{ii}.pb")
             model.write_text(f"model {ii}")
             self.model_list.append(model)
         self.models = upload_artifact(self.model_list)
 
         self.block_id = "id123id"
         temp_name_pattern = "caly_task." + calypso_index_pattern
-        self.task_name_list = [temp_name_pattern % i for i in [1, 2]]
+        self.task_name = temp_name_pattern % 1
 
-        self.input_file_list = []
-        for i in range(2):
-            input_file = self.work_dir.joinpath(f"input_dat_{i+1}")
-            input_file.write_text(f"input.dat-{i+1}")
-            self.input_file_list.append(input_file)
-        self.input_file_list = upload_artifact(self.input_file_list)
+        input_file = self.work_dir.joinpath("input.dat")
+        input_file.write_text("input.dat")
+        self.input_file = upload_artifact(input_file)
 
-        self.step_list = []
-        for i in range(2):
-            step_file = self.work_dir.joinpath(f"step-{i}-none")
-            step_file.write_text("None")
-            self.step_list.append(step_file)
-        self.step_list = upload_artifact(self.step_list)
+        step_file = self.work_dir.joinpath("step-none")
+        step_file.write_text("None")
+        self.step = upload_artifact(step_file)
 
-        self.results_list = []
-        for i in range(2):
-            results_dir = self.work_dir.joinpath(f"results-{i}-none")
-            results_dir.mkdir(parents=True, exist_ok=True)
-            self.results_list.append(results_dir)
-        self.results_list = upload_artifact(self.results_list)
+        results_dir = self.work_dir.joinpath("results-none")
+        results_dir.mkdir(parents=True, exist_ok=True)
+        self.results = upload_artifact(results_dir)
 
-        self.opt_results_dir_list = []
-        for i in range(2):
-            opt_results_dir = self.work_dir.joinpath(f"results-{i}-none")
-            opt_results_dir.mkdir(parents=True, exist_ok=True)
-            self.opt_results_dir_list.append(opt_results_dir)
-        self.opt_results_dir_list = upload_artifact(self.opt_results_dir_list)
+        opt_results_dir = self.work_dir.joinpath("results-none")
+        opt_results_dir.mkdir(parents=True, exist_ok=True)
+        self.opt_results_dir = upload_artifact(opt_results_dir)
 
-        self.caly_run_opt_files = []
-        for i in range(2):
-            caly_run_opt_file = self.work_dir.joinpath(f"caly_run_opt-{i}.py")
-            caly_run_opt_file.write_text(f"caly_run_opt-{i}")
-            self.caly_run_opt_files.append(caly_run_opt_file)
-        self.caly_run_opt_files = upload_artifact(self.caly_run_opt_files)
+        caly_run_opt_file = self.work_dir.joinpath("caly_run_opt.py")
+        caly_run_opt_file.write_text("caly_run_opt")
+        self.caly_run_opt_file = upload_artifact(caly_run_opt_file)
 
-        self.caly_check_opt_files = []
-        for i in range(2):
-            caly_check_opt_file = self.work_dir.joinpath(f"caly_check_opt-{i}.py")
-            caly_check_opt_file.write_text(f"caly_check_opt-{i}")
-            self.caly_check_opt_files.append(caly_check_opt_file)
-        self.caly_check_opt_files = upload_artifact(self.caly_check_opt_files)
+        caly_check_opt_file = self.work_dir.joinpath("caly_check_opt.py")
+        caly_check_opt_file.write_text("caly_check_opt")
+        self.caly_check_opt_file = upload_artifact(caly_check_opt_file)
 
     def tearDown(self):
         pass
@@ -419,30 +273,21 @@ class TestCalyEvoStep(unittest.TestCase):
             run_config=default_config,
             upload_python_packages=upload_python_packages,
         )
-        print(f"----==---block_id: {self.block_id}")
-        print(f"----==---task_name_list: {self.task_name_list}")
-        print(f"----==---models: {self.models}")
-        print(f"----==---input_file_list: {self.input_file_list}")
-        print(f"----==---caly_run_opt_files: {self.caly_run_opt_files}")
-        print(f"----==---caly_check_opt_files: {self.caly_check_opt_files}")
-        print(f"----==---results_list: {self.results_list}")
-        print(f"----==---step_list: {self.step_list}")
-        print(f"----==---opt_results_dir_list: {self.opt_results_dir_list}")
         caly_evo_step = Step(
             "caly-evo-step",
             template=steps,
             parameters={
                 "block_id": self.block_id,
-                "task_name_list": self.task_name_list,
+                "task_name": self.task_name,
             },
             artifacts={
                 "models": self.models,
-                "input_file_list": self.input_file_list,
-                "caly_run_opt_files": self.caly_run_opt_files,
-                "caly_check_opt_files": self.caly_check_opt_files,
-                "results_list": self.results_list,
-                "step_list": self.step_list,
-                "opt_results_dir_list": self.opt_results_dir_list,
+                "input_file": self.input_file,
+                "caly_run_opt_file": self.caly_run_opt_file,
+                "caly_check_opt_file": self.caly_check_opt_file,
+                "results": self.results,
+                "step": self.step,
+                "opt_results_dir": self.opt_results_dir,
             },
         )
 

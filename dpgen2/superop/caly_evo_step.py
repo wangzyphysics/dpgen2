@@ -59,23 +59,23 @@ class CalyEvoStep(Steps):
     ):
         self._input_parameters = {
             "block_id": InputParameter(type=str, value=""),
-            "task_name_list": InputParameter(),
+            "task_name": InputParameter(type=str),
         }
         self._input_artifacts = {
             "models": InputArtifact(),
-            "input_file_list": InputArtifact(),  # input.dat
-            "caly_run_opt_files": InputArtifact(),
-            "caly_check_opt_files": InputArtifact(),
+            "input_file": InputArtifact(),  # input.dat
+            "caly_run_opt_file": InputArtifact(),
+            "caly_check_opt_file": InputArtifact(),
             # calypso evo needed
-            "results_list": InputArtifact(),
-            "step_list": InputArtifact(),
-            "opt_results_dir_list": InputArtifact(),
+            "results": InputArtifact(),
+            "step": InputArtifact(),
+            "opt_results_dir": InputArtifact(),
         }
         self._output_parameters = {
-            "task_names": OutputParameter(),
+            "task_name": OutputParameter(),
         }
         self._output_artifacts = {
-            "traj_results": OutputArtifact(),
+            "traj_result": OutputArtifact(),
         }
 
         super().__init__(
@@ -90,8 +90,10 @@ class CalyEvoStep(Steps):
             ),
         )
 
+        # self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
         self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
         self.step_keys = {}
+        # ii = "collect-run-calypso-{{item}}"
         ii = "collect-run-calypso"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
         ii = "prep-run-dp-optim"
@@ -146,60 +148,25 @@ def _caly_evo_step(
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})
 
-    print(
-        run_template_config,
-        caly_evo_step_steps.inputs.parameters["task_name_list"],
-        caly_evo_step_steps.inputs.artifacts["input_file_list"],
-        caly_evo_step_steps.inputs.artifacts["step_list"],
-        caly_evo_step_steps.inputs.artifacts["results_list"],
-        caly_evo_step_steps.inputs.artifacts["opt_results_dir_list"],
-    )
     # collect the last step files and run calypso.x to generate structures
     collect_run_calypso = Step(
         "collect-run-calypso",
         template=PythonOPTemplate(
             collect_run_calypso_op,
-            slices=Slices(
-                # "{{item}}",  # caly_task.int
-                "int('{{item}}')",
-                input_parameter=[
-                    "task_name",
-                ],  # command
-                input_artifact=[
-                    "input_file",
-                    "step",
-                    "results",
-                    "opt_results_dir",
-                ],  # command
-                output_parameter=[
-                    "task_name",
-                    "finished",
-                ],  # str(caly_task.int)
-                output_artifact=[
-                    "poscar_dir",
-                    "input_file",
-                    "results",
-                    "step",
-                ],  # caly.log, caly_task.int
-                **template_slice_config,
-            ),
             python_packages=upload_python_packages,
             **run_template_config,
         ),
         parameters={
             "config": run_template_config,
-            "task_name": caly_evo_step_steps.inputs.parameters["task_name_list"],
+            "task_name": caly_evo_step_steps.inputs.parameters["task_name"],
         },
         artifacts={
-            "input_file": caly_evo_step_steps.inputs.artifacts["input_file_list"],
-            "step": caly_evo_step_steps.inputs.artifacts["step_list"],
-            "results": caly_evo_step_steps.inputs.artifacts["results_list"],
-            "opt_results_dir": caly_evo_step_steps.inputs.artifacts["opt_results_dir_list"],
+            "input_file": caly_evo_step_steps.inputs.artifacts["input_file"],
+            "step": caly_evo_step_steps.inputs.artifacts["step"],
+            "results": caly_evo_step_steps.inputs.artifacts["results"],
+            "opt_results_dir": caly_evo_step_steps.inputs.artifacts["opt_results_dir"],
         },
-        with_sequence=argo_sequence(
-            argo_len(caly_evo_step_steps.inputs.parameters["task_name_list"]),
-            format=calypso_index_pattern,
-        ),
+        # key=step_keys["collect-run-calypso-{{item}}"],
         key=step_keys["collect-run-calypso"],
         executor=prep_executor,
         **run_config,
@@ -211,23 +178,6 @@ def _caly_evo_step(
         "prep-run-dp-optim",
         template=PythonOPTemplate(
             prep_run_dp_optim_op,
-            slices=Slices(
-                "{{item}}",  # caly_task.int
-                input_parameter=[
-                    "task_name",
-                ],
-                input_artifact=[
-                    "poscar_dir",
-                    "caly_run_opt_file",
-                    "caly_check_opt_file",
-                ],
-                output_parameter=[],
-                output_artifact=[
-                    "optim_results_dir",
-                    "traj_results_dir",
-                ],
-                **template_slice_config,
-            ),
             python_packages=upload_python_packages,
             **run_template_config,
         ),
@@ -239,10 +189,10 @@ def _caly_evo_step(
             "poscar_dir": collect_run_calypso.outputs.artifacts["poscar_dir"],
             "models_dir": caly_evo_step_steps.inputs.artifacts["models"],
             "caly_run_opt_file": caly_evo_step_steps.inputs.artifacts[
-                "caly_run_opt_files"
+                "caly_run_opt_file"
             ],
             "caly_check_opt_file": caly_evo_step_steps.inputs.artifacts[
-                "caly_check_opt_files"
+                "caly_check_opt_file"
             ],
         },
         key=step_keys["prep-run-dp-optim"],
@@ -258,30 +208,28 @@ def _caly_evo_step(
         template=caly_evo_step_steps,
         parameters={
             "block_id": caly_evo_step_steps.inputs.parameters["block_id"],
-            "task_name_list": prep_run_dp_optim.outputs.parameters["task_name"],
+            "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
         },
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
             # "input_file_list": caly_evo_step_steps.inputs.artifacts["input_file_list"],  # input.dat
-            "input_file_list": collect_run_calypso.outputs.artifacts["input_file"],  # input.dat
-            "results_list": collect_run_calypso.outputs.artifacts["results"],
-            "step_list": collect_run_calypso.outputs.artifacts["step"],
-            "opt_results_dir_list": prep_run_dp_optim.outputs.artifacts["optim_results_dir"],
-            # "caly_run_opt_files": caly_evo_step_steps.inputs.artifacts["caly_run_opt_files"],  # input.dat
-            # "caly_check_opt_files": caly_evo_step_steps.inputs.artifacts["caly_check_opt_files"],  # input.dat
-            "caly_run_opt_files": prep_run_dp_optim.outputs.artifacts["caly_run_opt_file"],  # input.dat
-            "caly_check_opt_files": prep_run_dp_optim.outputs.artifacts["caly_check_opt_file"],  # input.dat
+            "input_file": collect_run_calypso.outputs.artifacts["input_file"],  # input.dat
+            "results": collect_run_calypso.outputs.artifacts["results"],
+            "step": collect_run_calypso.outputs.artifacts["step"],
+            "opt_results_dir": prep_run_dp_optim.outputs.artifacts["optim_results_dir"],
+            "caly_run_opt_file": prep_run_dp_optim.outputs.artifacts["caly_run_opt_file"],  # input.dat
+            "caly_check_opt_file": prep_run_dp_optim.outputs.artifacts["caly_check_opt_file"],  # input.dat
             },
         when="%s == False" % (collect_run_calypso.outputs.parameters["finished"]),
     )
     caly_evo_step_steps.add(next_step)
 
     caly_evo_step_steps.outputs.parameters[
-        "task_names"
+        "task_name"
     ]._value_from_parameter = collect_run_calypso.outputs.parameters["task_name"],
 
     caly_evo_step_steps.outputs.artifacts[
-        "traj_results"
+        "traj_result"
     ]._from = prep_run_dp_optim.outputs.artifacts["traj_results_dir"]
 
     return caly_evo_step_steps

@@ -25,6 +25,7 @@ from dflow.python import (
     OPIO,
     Artifact,
     BigParameter,
+    Parameter,
     FatalError,
     OPIOSign,
     TransientError,
@@ -58,7 +59,7 @@ class CollRunCaly(OP):
         return OPIOSign(
             {
                 "config": BigParameter(dict),  # for command
-                "task_name": BigParameter(str),  # calypso_task.idx
+                "task_name": Parameter(str),  # calypso_task.idx
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
                 "step": Artifact(Path),  # step file
                 "results": Artifact(Path),  # dir named results for evo
@@ -70,8 +71,8 @@ class CollRunCaly(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "task_name": str,  # calypso_task.idx
-                "finished": str,  # True if step == maxstep
+                "task_name": Parameter(str),  # calypso_task.idx
+                "finished": Parameter(str),  # True if step == maxstep
                 "poscar_dir": Artifact(Path),  # dir contains POSCAR* of next step
                 "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
