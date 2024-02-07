@@ -65,6 +65,8 @@ class PrepRunCaly(Steps):
     ):
         self._input_parameters = {
             "block_id": InputParameter(type=str, value=""),
+            "caly_task_grp": InputParameter(),
+            "type_map": InputParameter(),
         }
         self._input_artifacts = {
             "models": InputArtifact(),
@@ -143,16 +145,11 @@ def _prep_run_caly(
 ):
     prep_config = deepcopy(prep_config)
     run_config = deepcopy(run_config)
-    print(f"---run_config--------{run_config}")
-    print(f"---prep_config--------{prep_config}")
     prep_template_config = prep_config.pop("template_config")
     run_template_config = run_config.pop("template_config")
     prep_executor = init_executor(prep_config.pop("executor"))
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})
-    print(f"---prep_template_config--------{prep_template_config}")
-    print(f"---run_template_config--------{run_template_config}")
-    caly_config = run_template_config.pop("caly_config")
 
     # prep caly input files
     prep_caly_input = Step(
@@ -163,7 +160,8 @@ def _prep_run_caly(
             **prep_template_config,
         ),
         parameters={
-            "caly_inputs": caly_config["caly_inputs"],
+            # "caly_inputs": caly_config["caly_inputs"],
+            "caly_task_grp": prep_run_caly_steps.inputs.parameters["caly_task_grp"],
         },
         artifacts={},
         key=step_keys["prep-caly-input"],
@@ -172,7 +170,12 @@ def _prep_run_caly(
     )
     prep_run_caly_steps.add(prep_caly_input)
 
-    temp_value = [Path("dir_none") for _ in range(len(caly_config["caly_inputs"]))]
+    temp_value = [
+        Path("dir_none")
+        for _ in range(
+            len(prep_run_caly_steps.inputs.parameters["caly_task_grp"])
+            )
+    ]
     # collect traj dirs
     caly_evo_step = Step(
         name="caly-evo-step",
@@ -231,7 +234,7 @@ def _prep_run_caly(
             **prep_template_config,
         ),
         parameters={
-            "type_map": caly_config["type_map"],
+            "type_map": prep_run_caly_steps.inputs.parameters["type_map"],
             "task_name": caly_evo_step.outputs.parameters["task_names"],
         },
         artifacts={
@@ -244,14 +247,14 @@ def _prep_run_caly(
     )
     prep_run_caly_steps.add(run_caly_model_devi)
 
-    prep_run_caly_steps.outputs.parameters[
-        "task_names"
-    ].value_from_parameter = run_caly_model_devi.outputs.parameters["task_name"]
-    prep_run_caly_steps.outputs.artifacts[
-        "trajs"
-    ]._from = run_caly_model_devi.outputs.artifacts["traj"]
-    prep_run_caly_steps.outputs.artifacts[
-        "model_devis"
-    ]._from = run_caly_model_devi.outputs.artifacts["model_devi"]
+    prep_run_caly_steps.outputs.parameters["task_names"].value_from_parameter = (
+        run_caly_model_devi.outputs.parameters["task_name"]
+    )
+    prep_run_caly_steps.outputs.artifacts["trajs"]._from = (
+        run_caly_model_devi.outputs.artifacts["traj"]
+    )
+    prep_run_caly_steps.outputs.artifacts["model_devis"]._from = (
+        run_caly_model_devi.outputs.artifacts["model_devi"]
+    )
 
     return prep_run_caly_steps

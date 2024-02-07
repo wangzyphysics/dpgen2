@@ -127,5 +127,5 @@ ITEM: ATOMS id type x y z fx fy fz
             )
         )
         # check output
-        self.assertEqual(out["traj"], Path("traj.dump"))
-        self.assertEqual(out["model_devi"], Path("model_devi.out"))
+        self.assertEqual(out["traj"], self.task_name / "traj.dump")
+        self.assertEqual(out["model_devi"], self.task_name / "model_devi.out")

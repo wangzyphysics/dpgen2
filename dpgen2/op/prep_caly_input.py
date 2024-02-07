@@ -305,7 +305,7 @@ class PrepCalyInput(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "caly_inputs": BigParameter(List[dict]),  # calypso input params
+                "caly_task_grp": BigParameter(Path),  # calypso input params
             }
         )
 
@@ -331,7 +331,7 @@ class PrepCalyInput(OP):
         ----------
         ip : dict
             Input dict with components:
-            - `caly_inputs` : (`BigParameter(dict)`) Definitions for CALYPSO input file.
+            - `caly_task_grp` : (`BigParameter()`) Definitions for CALYPSO input file.
 
         Returns
         -------
@@ -344,68 +344,22 @@ class PrepCalyInput(OP):
             - `caly_check_opt_files`: (`Artifact(List[Path])`)
         """
 
-        necessary_keys = {
-            "NumberOfSpecies": "",
-            "NameOfAtoms": "",
-            "AtomicNumber": "",
-            "NumberOfAtoms": "",
-            "PopSize": 30,
-            "MaxStep": 10,
-            "DistanceOfIon": "",
-            # "@DistanceOfIon
-            # "@End
-        }
-
-        default_key_value = {
-            "SystemName": "CALYPSO",
-            "NumberOfFormula": "1 1",
-            "PSTRESS": 0,
-            "fmax": 0.01,
-            "Volume": 0,
-            "Ialgo": 2,
-            "PsoRatio": 0.6,
-            "ICode": 15,
-            "NumberOfLbest": 4,
-            "NumberOfLocalOptim": 3,
-            "Command": "sh submit.sh",
-            "MaxTime": 9000,
-            "GenType": 1,
-            "PickUp": "F",
-            "PickStep": 3,
-            "Parallel": "F",
-            "LMC": "F",
-            "Split": "T",
-            "SpeSpaceGroup": "2 230",
-        }
-
         cc = 0
-        task_names = []
+        task_paths = []
         input_dat_files = []
         caly_run_opt_files = []
         caly_check_opt_files = []
-        caly_inputs = ip["caly_inputs"]
-        for caly_input in caly_inputs:
-            update = caly_input.pop("UpDate", True)
-            if update:
-                for key in (
-                    necessary_keys.keys()
-                ):  # All necessary keys must be included or raise.
-                    necessary_keys[key] = caly_input.pop(key)
-                default_key_value.update(caly_input)
-                default_key_value.update(necessary_keys)
-            else:
-                default_key_value = caly_input
-
-            tname = Path(calypso_task_pattern % cc)
-            input_file, caly_run_opt_file, caly_check_opt_file = _mk_task_from_dict(
-                default_key_value, tname
-            )
+        caly_task_grp = ip["caly_task_grp"]
+        for tt in caly_task_grp:
+            ff = tt.files()
+            tname = _mk_task_from_files(cc, ff)
+            task_paths.append(tname)
+            input_dat_files.append(tname / calypso_input_file)
+            caly_run_opt_files.append(tname / calypso_run_opt_file)
+            caly_check_opt_files.append(tname / calypso_check_opt_file)
             cc += 1
+        task_names = [str(ii) for ii in task_paths]
 
-            task_names.append(str(tname))
-            input_dat_files.append(input_file)
-            caly_run_opt_files.append(caly_run_opt_file)
-            caly_check_opt_files.append(caly_check_opt_file)
         return OPIO(
             {
                 "task_names": task_names,
@@ -416,34 +370,9 @@ class PrepCalyInput(OP):
         )
 
 
-def _mk_task_from_dict(mapping, tname):
-    with set_directory(tname):
-        distanceofion = mapping.pop("DistanceOfIon")
-        vsc = str(mapping.pop("VSC", "F")).lower().startswith("t")
-        if vsc:
-            ctrlrange = mapping.pop("CtrlRange")
-
-        file_str = ""
-        for key, value in mapping.items():
-            file_str += f"{key} = {str(value)}\n"
-        file_str += "@DistanceOfIon\n"
-        file_str += distanceofion + "\n"
-        file_str += "@End\n"
-        if vsc:
-            file_str += "VSC = T\n"
-            file_str += "@CtrlRange\n"
-            file_str += ctrlrange + "\n"
-            file_str += "@End\n"
-        input_file = Path(calypso_input_file)
-        input_file.write_text(file_str)
-
-        fmax = mapping.get("fmax", 0.01)
-        pstress = mapping.get("PSTRESS", 0)
-        Path(calypso_run_opt_file).write_text(
-            calypso_run_opt_str + calypso_run_opt_str_end % (fmax, pstress)
-        )
-        Path(calypso_check_opt_file).write_text(calypso_check_opt_str)
-
-    return tname.joinpath(calypso_input_file), tname.joinpath(
-        calypso_run_opt_file
-    ), tname.joinpath(calypso_check_opt_file)
+def _mk_task_from_files(cc, ff):
+    tname = Path(calypso_task_pattern % cc)
+    tname.mkdir(exist_ok=True, parents=True)
+    for file_name, file_content in ff.items():
+        (tname / file_name).write_text(file_content)
+    return tname

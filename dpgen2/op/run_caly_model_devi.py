@@ -132,8 +132,8 @@ class RunCalyModelDevi(OP):
 
         ret_dict = {
             "task_name": str(work_dir),
-            "traj": dump_file,
-            "model_devi": model_devi_file,
+            "traj": work_dir / dump_file,
+            "model_devi": work_dir / model_devi_file,
         }
 
         return OPIO(ret_dict)
