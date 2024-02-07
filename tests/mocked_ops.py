@@ -1003,7 +1003,6 @@ class MockedCollRunCaly(CollRunCaly):
             Path(f"results/pso_opt_{i}").write_text(f"pso_opt_{i}")
             Path(f"results/pso_sor_{i}").write_text(f"pso_sor_{i}")
 
-
         poscar_dir = Path("poscar_dir")
         poscar_dir.mkdir(parents=True, exist_ok=True)
         for poscar in Path().glob("POSCAR_*"):
@@ -1092,4 +1091,3 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
                 "caly_check_opt_file": work_dir / caly_check_opt_file.name,
             }
         )
-

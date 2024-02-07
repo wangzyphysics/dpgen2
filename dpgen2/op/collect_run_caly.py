@@ -79,7 +79,9 @@ class CollRunCaly(OP):
                 "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
                 "step": Artifact(Path),  # step
-                "fake_traj_results_dir": Artifact(Path),  # dir contains POSCAR* of next step
+                "fake_traj_results_dir": Artifact(
+                    Path
+                ),  # dir contains POSCAR* of next step
             }
         )
 

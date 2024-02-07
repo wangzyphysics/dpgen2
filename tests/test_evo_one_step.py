@@ -276,7 +276,6 @@ class TestCalyEvoStep(unittest.TestCase):
             shutil.rmtree(i, ignore_errors=True)
         shutil.rmtree("upload", ignore_errors=True)
 
-
     def test(self):
         steps = CalyEvoStep(
             "caly-evo-run",
@@ -321,5 +320,3 @@ class TestCalyEvoStep(unittest.TestCase):
 
         # for ii in step.outputs.parameters["task_names"].value:
         #     self.check_run_lmp_output(ii, self.model_list)
-
-
