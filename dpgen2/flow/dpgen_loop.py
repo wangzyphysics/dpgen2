@@ -94,7 +94,7 @@ class SchedulerWrapper(OP):
             {
                 "converged": bool,
                 "exploration_scheduler": BigParameter(ExplorationScheduler),
-                "lmp_task_grp": BigParameter(ExplorationTaskGroup),
+                "expl_task_grp": BigParameter(ExplorationTaskGroup),
                 "conf_selector": ConfSelector,
             }
         )
@@ -108,13 +108,13 @@ class SchedulerWrapper(OP):
         report = ip["exploration_report"]
         trajs = ip["trajs"]
 
-        conv, lmp_task_grp, selector = scheduler.plan_next_iteration(report, trajs)
+        conv, expl_task_grp, selector = scheduler.plan_next_iteration(report, trajs)
 
         return OPIO(
             {
                 "converged": conv,
                 "exploration_scheduler": scheduler,
-                "lmp_task_grp": lmp_task_grp,
+                "expl_task_grp": expl_task_grp,
                 "conf_selector": selector,
             }
         )
@@ -175,20 +175,21 @@ class ConcurrentLearningLoop(Steps):
             "fp_config": InputParameter(),
             "exploration_scheduler": InputParameter(),
             "optional_parameter": InputParameter(type=dict),
+            "expl_task_grp": InputParameter(),
         }
         self._input_artifacts = {
             "init_models": InputArtifact(optional=True),
             "init_data": InputArtifact(),
             "iter_data": InputArtifact(),
         }
-        if explore_style == "lmp":
-            self._input_parameters.update(
-                {
-                    "lmp_task_grp": InputParameter(),
-                }
-            )
-        elif explore_style == "calypso":
-            pass
+        # if explore_style == "lmp":
+        #     self._input_parameters.update(
+        #         {
+        #             "lmp_task_grp": InputParameter(),
+        #         }
+        #     )
+        # elif explore_style == "calypso":
+        #     pass
 
         self._output_parameters = {
             "exploration_scheduler": OutputParameter(),
@@ -371,15 +372,16 @@ def _loop(
         "fp_config": steps.inputs.parameters["fp_config"],
         "optional_parameter": block_optional_parameter,
         "explore_config": steps.inputs.parameters["explore_config"],
+        "expl_task_grp": steps.inputs.parameters["expl_task_grp"],
     }
-    if steps.explore_style == "lmp":
-        block_common_parameters.update(
-            {
-                "lmp_task_grp": steps.inputs.parameters["lmp_task_grp"],
-            }
-        )
-    elif steps.explore_style == "calypso":
-        pass
+    # if steps.explore_style == "lmp":
+    #     block_common_parameters.update(
+    #         {
+    #             "lmp_task_grp": steps.inputs.parameters["lmp_task_grp"],
+    #         }
+    #     )
+    # elif steps.explore_style == "calypso":
+    #     pass
 
     print("-------block_common_parameters", block_common_parameters)
     block_step = Step(
@@ -450,16 +452,17 @@ def _loop(
             "exploration_scheduler"
         ],
         "optional_parameter": steps.inputs.parameters["optional_parameter"],
+        "expl_task_grp": scheduler_step.outputs.parameters["expl_task_grp"],
     }
 
-    if steps.explore_style == "lmp":
-        next_common_parameters.update(
-            {
-                "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
-            }
-        )
-    elif steps.explore_style == "calypso":
-        pass
+    # if steps.explore_style == "lmp":
+    #     next_common_parameters.update(
+    #         {
+    #             "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
+    #         }
+    #     )
+    # elif steps.explore_style == "calypso":
+    #     pass
 
     next_step = Step(
         name=name + "-next",
@@ -563,15 +566,16 @@ def _dpgen(
             "exploration_scheduler"
         ],
         "optional_parameter": steps.inputs.parameters["optional_parameter"],
+        "expl_task_grp": scheduler_step.outputs.parameters["expl_task_grp"],
     }
-    if steps.explore_style == "lmp":
-        common_parameters.update(
-            {
-                "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
-            }
-        )
-    elif steps.explore_style == "calypso":
-        pass
+    # if steps.explore_style == "lmp":
+    #     common_parameters.update(
+    #         {
+    #             "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
+    #         }
+    #     )
+    # elif steps.explore_style == "calypso":
+    #     pass
     loop_step = Step(
         name=name + "-loop",
         template=loop_op,

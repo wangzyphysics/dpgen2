@@ -107,20 +107,21 @@ class ConcurrentLearningBlock(Steps):
             "optional_parameter": InputParameter(
                 type=dict, value=block_default_optional_parameter
             ),
+            "expl_task_grp": InputParameter(),
         }
         self._input_artifacts = {
             "init_models": InputArtifact(optional=True),
             "init_data": InputArtifact(),
             "iter_data": InputArtifact(),
         }
-        if exploration_style == "lmp":
-            self._input_parameters.update(
-                {
-                    "lmp_task_grp": InputParameter(),
-                }
-            )
-        elif exploration_style == "calypso":
-            pass
+        # if exploration_style == "lmp":
+        #     self._input_parameters.update(
+        #         {
+        #             "lmp_task_grp": InputParameter(),
+        #         }
+        #     )
+        # elif exploration_style == "calypso":
+        #     pass
         self._output_parameters = {
             "exploration_report": OutputParameter(),
         }
@@ -245,7 +246,7 @@ def _block_cl(
             parameters={
                 "block_id": block_steps.inputs.parameters["block_id"],
                 "lmp_config": block_steps.inputs.parameters["explore_config"],
-                "lmp_task_grp": block_steps.inputs.parameters["lmp_task_grp"],
+                "lmp_task_grp": block_steps.inputs.parameters["expl_task_grp"],
             },
             artifacts={
                 "models": prep_run_dp_train.outputs.artifacts["models"],
@@ -260,6 +261,8 @@ def _block_cl(
             template=prep_run_explore_op,
             parameters={
                 "block_id": block_steps.inputs.parameters["block_id"],
+                "caly_task_grp": block_steps.inputs.parameters["expl_task_grp"],
+                "type_map": block_steps.inputs.parameters["type_map"],
             },
             artifacts={
                 "models": prep_run_dp_train.outputs.artifacts["models"],

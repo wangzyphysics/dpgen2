@@ -686,7 +686,7 @@ def submit_concurrent_learning(
         )
         # plan next
         # hack! trajs is set to None...
-        conv, lmp_task_grp, selector = scheduler_new.plan_next_iteration(
+        conv, expl_task_grp, selector = scheduler_new.plan_next_iteration(
             exploration_report, trajs=None
         )
         # update output of the scheduler step
@@ -699,8 +699,8 @@ def submit_concurrent_learning(
             scheduler_new,
         )
         reuse_step[idx_old].modify_output_parameter(
-            "lmp_task_grp",
-            lmp_task_grp,
+            "expl_task_grp",
+            expl_task_grp,
         )
         reuse_step[idx_old].modify_output_parameter(
             "conf_selector",
