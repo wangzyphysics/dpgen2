@@ -16,165 +16,324 @@ from dpgen2.constants import (
 )
 
 
-def _sample_sphere():
-    while True:
-        vv = np.array([np.random.normal(), np.random.normal(), np.random.normal()])
-        vn = np.linalg.norm(vv)
-        if vn < 0.2:
-            continue
-        return vv / vn
-
-
 def make_calypso_input(
-    conf_file: str,
-    ensemble: str,
-    graphs: List[str],
-    nsteps: int,
-    dt: float,
-    neidelay: Optional[int],
-    trj_freq: int,
-    mass_map: List[float],
-    temp: float,
-    tau_t: float = 0.1,
-    pres: Optional[float] = None,
-    tau_p: float = 0.5,
-    use_clusters: bool = False,
-    relative_f_epsilon: Optional[float] = None,
-    relative_v_epsilon: Optional[float] = None,
-    pka_e: Optional[float] = None,
-    ele_temp_f: Optional[float] = None,
-    ele_temp_a: Optional[float] = None,
-    nopbc: bool = False,
-    max_seed: int = 1000000,
-    deepmd_version="2.0",
-    trj_seperate_files=True,
+    numb_of_species: int,
+    name_of_atoms: List[str],
+    atomic_number: List[int],
+    numb_of_atoms: List[int],
+    distance_of_ions: List[List[float]],
+    pop_size: int = 30,
+    max_step: int = 5,
+    system_name: str = "CALYPSO",
+    numb_of_formula: List[int] = [1, 1],
+    pressure: float = 0.001,
+    fmax: float = 0.01,
+    volume: float = 0,
+    ialgo: int = 2,
+    pso_ratio: float = 0.6,
+    icode: int = 15,
+    numb_of_lbest: int = 4,
+    numb_of_local_optim: int = 4,
+    command: str = "sh submit.sh",
+    max_time: int = 9000,
+    gen_type: int = 1,
+    pick_up: bool = False,
+    pick_step: int = 1,
+    parallel: bool = False,
+    split: bool = True,
+    spec_space_group: List[int] = [2, 230],
+    vsc: bool = False,
+    ctrl_range: List[List[int]] = [[1, 10]],
+    max_numb_atoms: int = 100,
+    **kwargs,
 ):
-    if (ele_temp_f is not None or ele_temp_a is not None) and Version(
-        deepmd_version
-    ) < Version("1"):
-        raise RuntimeError(
-            "the electron temperature is only supported by deepmd-kit >= 1.0.0, please upgrade your deepmd-kit"
-        )
-    if ele_temp_f is not None and ele_temp_a is not None:
-        raise RuntimeError(
-            "the frame style ele_temp and atom style ele_temp should not be set at the same time"
-        )
-    if "npt" in ensemble and pres is None:
-        raise RuntimeError("the pressre should be provided for npt ensemble")
-    ret = "variable        NSTEPS          equal %d\n" % nsteps
-    ret += "variable        THERMO_FREQ     equal %d\n" % trj_freq
-    ret += "variable        DUMP_FREQ       equal %d\n" % trj_freq
-    ret += "variable        TEMP            equal %f\n" % temp
-    if ele_temp_f is not None:
-        ret += "variable        ELE_TEMP        equal %f\n" % ele_temp_f
-    if ele_temp_a is not None:
-        ret += "variable        ELE_TEMP        equal %f\n" % ele_temp_a
-    if pres is not None:
-        ret += "variable        PRES            equal %f\n" % pres
-    ret += "variable        TAU_T           equal %f\n" % tau_t
-    if pres is not None:
-        ret += "variable        TAU_P           equal %f\n" % tau_p
-    ret += "\n"
-    ret += "units           metal\n"
-    if nopbc:
-        ret += "boundary        f f f\n"
-    else:
-        ret += "boundary        p p p\n"
-    ret += "atom_style      atomic\n"
-    ret += "\n"
-    ret += "neighbor        1.0 bin\n"
-    if neidelay is not None:
-        ret += "neigh_modify    delay %d\n" % neidelay
-    ret += "\n"
-    ret += "box          tilt large\n"
-    ret += (
-        'if "${restart} > 0" then "read_restart dpgen.restart.*" else "read_data %s"\n'
-        % conf_file
-    )
-    ret += "change_box   all triclinic\n"
-    for jj in range(len(mass_map)):
-        ret += "mass            %d %f\n" % (jj + 1, mass_map[jj])
-    graph_list = ""
-    for ii in graphs:
-        graph_list += ii + " "
-    if Version(deepmd_version) < Version("1"):
-        # 0.x
-        ret += "pair_style      deepmd %s ${THERMO_FREQ} model_devi.out\n" % graph_list
-    else:
-        # 1.x
-        keywords = ""
-        if use_clusters:
-            keywords += "atomic "
-        if relative_f_epsilon is not None:
-            keywords += "relative %s " % relative_f_epsilon
-        if relative_v_epsilon is not None:
-            keywords += "relative_v %s " % relative_v_epsilon
-        if ele_temp_f is not None:
-            keywords += "fparam ${ELE_TEMP}"
-        if ele_temp_a is not None:
-            keywords += "aparam ${ELE_TEMP}"
-        ret += (
-            "pair_style      deepmd %s out_freq ${THERMO_FREQ} out_file model_devi.out %s\n"
-            % (graph_list, keywords)
-        )
-    ret += "pair_coeff      * *\n"
-    ret += "\n"
-    ret += "thermo_style    custom step temp pe ke etotal press vol lx ly lz xy xz yz\n"
-    ret += "thermo          ${THERMO_FREQ}\n"
-    if trj_seperate_files:
-        ret += "dump            1 all custom ${DUMP_FREQ} traj/*.lammpstrj id type x y z fx fy fz\n"
-    else:
-        ret += (
-            "dump            1 all custom ${DUMP_FREQ} %s id type x y z fx fy fz\n"
-            % lmp_traj_name
-        )
-    ret += "restart         10000 dpgen.restart\n"
-    ret += "\n"
-    if pka_e is None:
-        ret += 'if "${restart} == 0" then "velocity        all create ${TEMP} %d"' % (
-            random.randrange(max_seed - 1) + 1
-        )
-    else:
-        sys = dpdata.System(conf_file, fmt="lammps/lmp")
-        sys_data = sys.data
-        pka_mass = mass_map[sys_data["atom_types"][0] - 1]
-        pka_vn = (
-            pka_e
-            * pc.electron_volt
-            / (0.5 * pka_mass * 1e-3 / pc.Avogadro * (pc.angstrom / pc.pico) ** 2)
-        )  # type: ignore
-        pka_vn = np.sqrt(pka_vn)
-        print(pka_vn)
-        pka_vec = _sample_sphere()
-        pka_vec *= pka_vn
-        ret += "group           first id 1\n"
-        ret += 'if "${restart} == 0" then "velocity        first set %f %f %f"\n' % (
-            pka_vec[0],
-            pka_vec[1],
-            pka_vec[2],
-        )
-        ret += "fix	       2 all momentum 1 linear 1 1 1\n"
-    ret += "\n"
-    if ensemble.split("-")[0] == "npt":
-        assert pres is not None
-        if nopbc:
-            raise RuntimeError("ensemble %s is conflicting with nopbc" % ensemble)
-    if ensemble == "npt" or ensemble == "npt-i" or ensemble == "npt-iso":
-        ret += "fix             1 all npt temp ${TEMP} ${TEMP} ${TAU_T} iso ${PRES} ${PRES} ${TAU_P}\n"
-    elif ensemble == "npt-a" or ensemble == "npt-aniso":
-        ret += "fix             1 all npt temp ${TEMP} ${TEMP} ${TAU_T} aniso ${PRES} ${PRES} ${TAU_P}\n"
-    elif ensemble == "npt-t" or ensemble == "npt-tri":
-        ret += "fix             1 all npt temp ${TEMP} ${TEMP} ${TAU_T} tri ${PRES} ${PRES} ${TAU_P}\n"
-    elif ensemble == "nvt":
-        ret += "fix             1 all nvt temp ${TEMP} ${TEMP} ${TAU_T}\n"
-    elif ensemble == "nve":
-        ret += "fix             1 all nve\n"
-    else:
-        raise RuntimeError("unknown emsemble " + ensemble)
-    if nopbc:
-        ret += "velocity        all zero linear\n"
-        ret += "fix             fm all momentum 1 linear 1 1 1\n"
-    ret += "\n"
-    ret += "timestep        %f\n" % dt
-    ret += "run             ${NSTEPS} upto\n"
-    return ret
+    distance_of_ions = np.array(distance_of_ions)
+    assert (
+        numb_of_species
+        == len(name_of_atoms)
+        == len(atomic_number)
+        == len(numb_of_atoms)
+    ), f"{numb_of_species:}, {name_of_atoms:} {atomic_number:} {numb_of_atoms:}"
+    assert distance_of_ions.shape == (
+        numb_of_species,
+        numb_of_species,
+    ), f"{distance_of_ions.shape} {numb_of_species:}"
+
+    necessary_keys = {
+        "NumberOfSpecies": numb_of_species,
+        "NameOfAtoms": " ".join(list(map(str, name_of_atoms))),
+        "AtomicNumber": " ".join(list(map(str, atomic_number))),
+        "NumberOfAtoms": " ".join(list(map(str, numb_of_atoms))),
+        "PopSize": pop_size,
+        "MaxStep": max_step,
+        "DistanceOfIon": "\n".join([" ".join(list(map(str, i))) for i in distance_of_ions]),
+        # @DistanceOfIon
+        # @end
+    }
+
+    default_key_value = {
+        "SystemName": system_name,
+        "NumberOfFormula": " ".join(list(map(str, numb_of_formula))),
+        "Volume": volume,
+        "Ialgo": ialgo,
+        "PsoRatio": pso_ratio,
+        "ICode": icode,
+        "NumberOfLbest": numb_of_lbest,
+        "NumberOfLocalOptim": numb_of_local_optim,
+        "Command": command,
+        "MaxTime": max_time,
+        "GenType": gen_type,
+        "PickUp": pick_up,
+        "PickStep": pick_step,
+        "Parallel": "T" if parallel else "F",
+        "Split": "T" if split else "F",
+        "SpeSpaceGroup": " ".join(list(map(str, spec_space_group))),
+        "VSC": "T" if vsc else "F",
+        "MaxNumAtom": max_numb_atoms,
+        "CtrlRange": "\n".join([" ".join(list(map(str, i))) for i in ctrl_range]),
+        # @CtrlRange
+        # @end
+    }
+    distance_of_ions_str = necessary_keys.pop("DistanceOfIon")
+    vsc_ctrl_range = default_key_value.pop("CtrlRange")
+
+    file_str = ""
+    for key, value in necessary_keys.items():
+        file_str += f"{key} = {str(value)}\n"
+    for key, value in default_key_value.items():
+        file_str += f"{key} = {str(value)}\n"
+    file_str += "@DistanceOfIon\n"
+    file_str += distance_of_ions_str + "\n"
+    file_str += "@End\n"
+    file_str += "@CtrlRange\n"
+    file_str += vsc_ctrl_range + "\n"
+    file_str += "@End\n"
+
+    calypso_run_opt_str = """#!/usr/bin/env python3
+
+import os
+import time
+import glob
+import numpy as np
+
+from ase.io import read, write
+from ase.io.trajectory import Trajectory
+from ase.optimize import LBFGS
+from ase.constraints import UnitCellFilter
+
+from deepmd.calculator import DP
+'''
+structure optimization with DP model and ASE
+PSTRESS and fmax should exist in input.dat
+'''
+
+def Get_Element_Num(elements):
+    '''Using the Atoms.symples to Know Element&Num'''
+    element = []
+    ele = {}
+    element.append(elements[0])
+    for x in elements:
+        if x not in element :
+            element.append(x)
+    for x in element:
+        ele[x] = elements.count(x)
+    return element, ele
+
+def Write_Contcar(contcar, element, ele, lat, pos):
+    '''Write CONTCAR'''
+    f = open(contcar,'w')
+    f.write('ASE-DP-OPT\\n')
+    f.write('1.0\\n')
+    for i in range(3):
+        f.write('%15.10f %15.10f %15.10f\\n' % tuple(lat[i]))
+    for x in element:
+        f.write(x + '  ')
+    f.write('\\n')
+    for x in element:
+        f.write(str(ele[x]) + '  ')
+    f.write('\\n')
+    f.write('Direct\\n')
+    na = sum(ele.values())
+    dpos = np.dot(pos,np.linalg.inv(lat))
+    for i in range(na):
+        f.write('%15.10f %15.10f %15.10f\\n' % tuple(dpos[i]))
+
+def Write_Outcar(outcar, element, ele, volume, lat, pos, ene, force, stress, pstress):
+    '''Write OUTCAR'''
+    f = open(outcar,'w')
+    for x in element:
+        f.write('VRHFIN =' + str(x) + '\\n')
+    f.write('ions per type =')
+    for x in element:
+        f.write('%5d' % ele[x])
+    f.write('\\nDirection     XX             YY             ZZ             XY             YZ             ZX\\n')
+    f.write('in kB')
+    f.write('%15.6f' % stress[0])
+    f.write('%15.6f' % stress[1])
+    f.write('%15.6f' % stress[2])
+    f.write('%15.6f' % stress[3])
+    f.write('%15.6f' % stress[4])
+    f.write('%15.6f' % stress[5])
+    f.write('\\n')
+    ext_pressure = np.sum(stress[0] + stress[1] + stress[2])/3.0 - pstress
+    f.write('external pressure = %20.6f kB    Pullay stress = %20.6f  kB\\n'% (ext_pressure, pstress))
+    f.write('volume of cell : %20.6f\\n' % volume)
+    f.write('direct lattice vectors\\n')
+    for i in range(3):
+        f.write('%10.6f %10.6f %10.6f\\n' % tuple(lat[i]))
+    f.write('POSITION                                       TOTAL-FORCE(eV/Angst)\\n')
+    f.write('-------------------------------------------------------------------\\n')
+    na = sum(ele.values())
+    for i in range(na):
+        f.write('%15.6f %15.6f %15.6f' % tuple(pos[i]))
+        f.write('%15.6f %15.6f %15.6f\\n' % tuple(force[i]))
+    f.write('-------------------------------------------------------------------\\n')
+    f.write('energy  without entropy= %20.6f %20.6f\\n' % (ene, ene/na))
+    enthalpy = ene + pstress * volume / 1602.17733
+    f.write('enthalpy is  TOTEN    = %20.6f %20.6f\\n' % (enthalpy, enthalpy/na))
+
+def run_opt(fmax, stress):
+    '''Using the ASE&DP to Optimize Configures'''
+
+    calc = DP(model='frozen_model.pb')    # init the model before iteration
+
+    Opt_Step = 1000
+    start = time.time()
+    # pstress kbar
+    pstress = stress
+    # kBar to eV/A^3
+    # 1 eV/A^3 = 160.21766028 GPa
+    # 1 / 160.21766028 ~ 0.006242
+    aim_stress = 1.0 * pstress* 0.01 * 0.6242 / 10.0
+
+    poscar_list = sorted(glob.glob("POSCAR_*"), key=lambda x: x.strip("POSCAR_"))
+    for poscar in poscar_list:
+        to_be_opti = read(poscar)
+        to_be_opti.calc = calc
+        ucf = UnitCellFilter(to_be_opti, scalar_pressure=aim_stress)
+        opt = LBFGS(ucf,trajectory=poscar.strip("POSCAR_") + '.traj')
+        opt.run(fmax=fmax,steps=Opt_Step)
+        atoms_lat = to_be_opti.cell
+        atoms_pos = to_be_opti.positions
+        atoms_force = to_be_opti.get_forces()
+        atoms_stress = to_be_opti.get_stress()
+        # eV/A^3 to GPa
+        atoms_stress = atoms_stress/(0.01*0.6242)
+        atoms_symbols = to_be_opti.get_chemical_symbols()
+        atoms_ene = to_be_opti.get_potential_energy()
+        atoms_vol = to_be_opti.get_volume()
+        element, ele = Get_Element_Num(atoms_symbols)
+        outcar = poscar.replace("POSCAR", "OUTCAR")
+        contcar = poscar.replace("POSCAR", "CONTCAR")
+
+        Write_Contcar(contcar, element, ele, atoms_lat, atoms_pos)
+        Write_Outcar(outcar, element, ele, atoms_vol, atoms_lat, atoms_pos, atoms_ene, atoms_force, atoms_stress * -10.0, pstress)
+"""
+
+    calypso_run_opt_str_end = """
+    if __name__ == '__main__':
+        run_opt(fmax=%.3f, stress=%.3f)
+"""
+
+    calypso_check_opt_str = """#!/usr/bin/env python3
+
+import os
+import numpy as np
+from ase.io import read, write
+from ase.io.trajectory import Trajectory, TrajectoryWriter
+
+'''
+check if structure optimization worked well
+if not, this script will generate a fake outcar
+'''
+
+def Get_Element_Num(elements):
+    '''Using the Atoms.symples to Know Element&Num'''
+    element = []
+    ele = {}
+    element.append(elements[0])
+    for x in elements:
+        if x not in element :
+            element.append(x)
+    for x in element:
+        ele[x] = elements.count(x)
+    return element, ele
+
+def Write_Contcar(element, ele, lat, pos):
+    '''Write CONTCAR'''
+    f = open('CONTCAR','w')
+    f.write('ASE-DP-FAILED\\n')
+    f.write('1.0\\n')
+    for i in range(3):
+        f.write('%15.10f %15.10f %15.10f\\n' % tuple(lat[i]))
+    for x in element:
+        f.write(x + '  ')
+    f.write('\\n')
+    for x in element:
+        f.write(str(ele[x]) + '  ')
+    f.write('\\n')
+    f.write('Direct\\n')
+    na = sum(ele.values())
+    dpos = np.dot(pos,np.linalg.inv(lat))
+    for i in range(na):
+        f.write('%15.10f %15.10f %15.10f\\n' % tuple(dpos[i]))
+
+def Write_Outcar(element, ele, volume, lat, pos, ene, force, stress,pstress):
+    '''Write OUTCAR'''
+    f = open('OUTCAR','w')
+    for x in element:
+        f.write('VRHFIN =' + str(x) + '\\n')
+    f.write('ions per type =')
+    for x in element:
+        f.write('%5d' % ele[x])
+    f.write('\\nDirection     XX             YY             ZZ             XY             YZ             ZX\\n')
+    f.write('in kB')
+    f.write('%15.6f' % stress[0])
+    f.write('%15.6f' % stress[1])
+    f.write('%15.6f' % stress[2])
+    f.write('%15.6f' % stress[3])
+    f.write('%15.6f' % stress[4])
+    f.write('%15.6f' % stress[5])
+    f.write('\\n')
+    ext_pressure = np.sum(stress[0] + stress[1] + stress[2])/3.0 - pstress
+    f.write('external pressure = %20.6f kB    Pullay stress = %20.6f  kB\\n'% (ext_pressure, pstress))
+    f.write('volume of cell : %20.6f\\n' % volume)
+    f.write('direct lattice vectors\\n')
+    for i in range(3):
+        f.write('%10.6f %10.6f %10.6f\\n' % tuple(lat[i]))
+    f.write('POSITION                                       TOTAL-FORCE(eV/Angst)\\n')
+    f.write('-------------------------------------------------------------------\\n')
+    na = sum(ele.values())
+    for i in range(na):
+        f.write('%15.6f %15.6f %15.6f' % tuple(pos[i]))
+        f.write('%15.6f %15.6f %15.6f\\n' % tuple(force[i]))
+    f.write('-------------------------------------------------------------------\\n')
+    f.write('energy  without entropy= %20.6f %20.6f\\n' % (ene, ene))
+    enthalpy = ene + pstress * volume / 1602.17733
+    f.write('enthalpy is  TOTEN    = %20.6f %20.6f\\n' % (enthalpy, enthalpy))
+
+def check():
+    to_be_opti = read('POSCAR')
+    traj = TrajectoryWriter('traj.traj', 'w', to_be_opti)
+    traj.write()
+    traj.close()
+    atoms_symbols_f = to_be_opti.get_chemical_symbols()
+    element_f, ele_f = Get_Element_Num(atoms_symbols_f)
+    atoms_vol_f = to_be_opti.get_volume()
+    atoms_stress_f = np.array([0, 0, 0, 0, 0, 0])
+    atoms_lat_f = to_be_opti.cell
+    atoms_pos_f = to_be_opti.positions
+    atoms_force_f = np.zeros((atoms_pos_f.shape[0], 3))
+    atoms_ene_f =  610612509
+    Write_Contcar(element_f, ele_f, atoms_lat_f, atoms_pos_f)
+    Write_Outcar(element_f, ele_f, atoms_vol_f, atoms_lat_f, atoms_pos_f, atoms_ene_f, atoms_force_f, atoms_stress_f * -10.0, 0)
+
+if __name__ == "__main__":
+    cwd = os.getcwd()
+    if not os.path.exists(os.path.join(cwd,'OUTCAR')):
+        check()"""
+
+    run_opt_str = calypso_run_opt_str + calypso_run_opt_str_end % (fmax, pressure)
+    check_opt_str = calypso_check_opt_str
+
+    return file_str, run_opt_str, check_opt_str

@@ -16,6 +16,7 @@ from dpgen2.exploration.task.customized_lmp_template_task_group import (
 from dpgen2.exploration.task.lmp_template_task_group import (
     LmpTemplateTaskGroup,
 )
+from dpgen2.exploration.task.caly_task_group import CalyTaskGroup
 from dpgen2.exploration.task.npt_task_group import (
     NPTTaskGroup,
 )
@@ -289,6 +290,26 @@ def config_strip_confidx(
 
 
 def make_task_group_from_config(
+    numb_models,
+    mass_map,
+    config,
+):
+    explore_type = config["explore"]["type"]
+    if explore_type == "lmp":
+        return make_lmp_task_group_from_config(numb_models, mass_map, config)
+    elif explore_type == "calypso":
+        return make_calypso_task_group_from_config(config)
+
+
+def make_calypso_task_group_from_config(config):
+    config.pop("type", None)
+
+    tgroup = CalyTaskGroup()
+    tgroup.set_params(**config)
+    return tgroup
+
+
+def make_lmp_task_group_from_config(
     numb_models,
     mass_map,
     config,

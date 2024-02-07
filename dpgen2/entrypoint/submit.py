@@ -77,7 +77,8 @@ from dpgen2.exploration.task import (
     ExplorationTask,
     LmpTemplateTaskGroup,
     NPTTaskGroup,
-    make_task_group_from_config,
+    make_lmp_task_group_from_config,
+    make_calypso_task_group_from_config,
     normalize_task_group_config,
 )
 from dpgen2.flow import (
@@ -227,6 +228,61 @@ def make_naive_exploration_scheduler(
     config,
 ):
     # use npt task group
+    explore_style = config["explore"]["style"]
+
+    if explore_style == "lmp":
+        return make_lmp_naive_exploration_scheduler(config)
+    elif explore_style == "calypso":
+        return make_calypso_naive_exploration_scheduler(config)
+
+
+def make_calypso_naive_exploration_scheduler(config):
+    model_devi_jobs = config["explore"]["stages"]
+    fp_task_max = config["fp"]["task_max"]
+    max_numb_iter = config["explore"]["max_numb_iter"]
+    fatal_at_max = config["explore"]["fatal_at_max"]
+    convergence = config["explore"]["convergence"]
+    output_nopbc = config["explore"]["output_nopbc"]
+    scheduler = ExplorationScheduler()
+    # report
+    conv_style = convergence.pop("type")
+    report = conv_styles[conv_style](**convergence)
+    render = TrajRenderLammps(nopbc=output_nopbc)
+    # selector
+    selector = ConfSelectorFrames(
+        render,
+        report,
+        fp_task_max,
+    )
+
+    for job_ in model_devi_jobs:
+        if not isinstance(job_, list):
+            job = [job_]
+        else:
+            job = job_
+        # stage
+        stage = ExplorationStage()
+        for jj in job:
+            jconf = normalize_task_group_config(jj)
+            # make task group
+            tgroup = make_calypso_task_group_from_config(jconf)
+            # add the list to task group
+            tasks = tgroup.make_task()
+            stage.add_task_group(tasks)
+        # stage_scheduler
+        stage_scheduler = ConvergenceCheckStageScheduler(
+            stage,
+            selector,
+            max_numb_iter=max_numb_iter,
+            fatal_at_max=fatal_at_max,
+        )
+        # scheduler
+        scheduler.add_stage_scheduler(stage_scheduler)
+
+    return scheduler
+
+
+def make_lmp_naive_exploration_scheduler(config):
     model_devi_jobs = config["explore"]["stages"]
     sys_configs = config["explore"]["configurations"]
     mass_map = config["inputs"]["mass_map"]
@@ -272,7 +328,7 @@ def make_naive_exploration_scheduler(
             for ii in sys_idx:
                 conf_list += sys_configs_lmp[ii]
             # make task group
-            tgroup = make_task_group_from_config(numb_models, mass_map, jconf)
+            tgroup = make_lmp_task_group_from_config(numb_models, mass_map, jconf)
             # add the list to task group
             tgroup.set_conf(
                 conf_list,
