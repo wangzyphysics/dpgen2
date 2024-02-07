@@ -1009,8 +1009,8 @@ class MockedCollRunCaly(CollRunCaly):
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
         finished = "true" if int(step_num) == int(max_step) + 1 else "false"
-        # print(f"-------------step_num: {step_num}, -------max_step---:{max_step}")
-        # print(f"-------------finished: {finished}")
+        print(f"-------------step_num: {step_num}, -------max_step---:{max_step}")
+        print(f"-------------finished: {finished}")
         fake_traj_dir = Path("traj_results_dir")
         fake_traj_dir.mkdir(parents=True, exist_ok=True)
 

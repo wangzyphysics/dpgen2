@@ -92,11 +92,11 @@ class PrepRunCaly(Steps):
         )
 
         # TODO: RunModelDevi
-        self._keys = ["prep-caly-input", "caly-evo-step", "run-caly-model-devi"]
+        self._keys = ["prep-caly-input", "caly-evo-step-{{item}}", "run-caly-model-devi"]
         self.step_keys = {}
         ii = "prep-caly-input"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
-        ii = "caly-evo-step"
+        ii = "caly-evo-step-{{item}}"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
         ii = "run-caly-model-devi"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
@@ -173,30 +173,28 @@ def _prep_run_caly(
     temp_value = [
         Path("dir_none")
         for _ in range(
-            len(prep_run_caly_steps.inputs.parameters["caly_task_grp"])
+            # argo_len(prep_run_caly_steps.outputs.parameters["task_names"])
+            2
             )
     ]
-    # collect traj dirs
+
     caly_evo_step = Step(
         name="caly-evo-step",
-        template=PythonOPTemplate(
-            caly_evo_step_op,
-            slices=Slices(
-                "int('{{item}}')",
-                input_parameter=["task_name"],
-                input_artifact=[
-                    "input_file",
-                    "results",
-                    "step",
-                    "opt_results_dir",
-                    "caly_run_opt_file",
-                    "caly_check_opt_file",
-                ],
-                output_artifact=["task_name", "traj_result"],
-                **run_template_config,
-            ),
-            python_packages=upload_python_packages,
-            **run_template_config,
+        template=caly_evo_step_op,
+        slices=Slices(
+            "int('{{item}}')",
+            input_parameter=["task_name"],
+            input_artifact=[
+                "input_file",
+                "results",
+                "step",
+                "opt_results_dir",
+                "caly_run_opt_file",
+                "caly_check_opt_file",
+            ],
+            output_parameter=["task_name"],
+            output_artifact=["traj_result"],
+            **template_slice_config,
         ),
         parameters={
             "block_id": prep_run_caly_steps.inputs.parameters["block_id"],
@@ -215,7 +213,7 @@ def _prep_run_caly(
             "step": temp_value,
             "opt_results_dir": temp_value,
         },
-        key=step_keys["caly-evo-step"],
+        key=step_keys["caly-evo-step-{{item}}"],
         with_sequence=argo_sequence(
             argo_len(prep_caly_input.outputs.parameters["task_names"]),
             format=calypso_index_pattern,
@@ -235,10 +233,10 @@ def _prep_run_caly(
         ),
         parameters={
             "type_map": prep_run_caly_steps.inputs.parameters["type_map"],
-            "task_name": caly_evo_step.outputs.parameters["task_names"],
+            "task_name": caly_evo_step.outputs.parameters["task_name"],
         },
         artifacts={
-            "traj_dirs": caly_evo_step.outputs.artifacts["traj_results"],
+            "traj_dirs": caly_evo_step.outputs.artifacts["traj_result"],
             "models": prep_run_caly_steps.inputs.artifacts["models"],
         },
         key=step_keys["run-caly-model-devi"],
