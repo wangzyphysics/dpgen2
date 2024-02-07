@@ -1,3 +1,6 @@
+from .caly_task_group import (
+    CalyTaskGroup,
+)
 from .conf_sampling_task_group import (
     ConfSamplingTaskGroup,
 )
@@ -8,9 +11,9 @@ from .lmp_template_task_group import (
     LmpTemplateTaskGroup,
 )
 from .make_task_group_from_config import (
-    make_task_group_from_config,
-    make_lmp_task_group_from_config,
     make_calypso_task_group_from_config,
+    make_lmp_task_group_from_config,
+    make_task_group_from_config,
 )
 from .make_task_group_from_config import normalize as normalize_task_group_config
 from .make_task_group_from_config import (
@@ -30,4 +33,3 @@ from .task_group import (
     BaseExplorationTaskGroup,
     ExplorationTaskGroup,
 )
-from .caly_task_group import CalyTaskGroup

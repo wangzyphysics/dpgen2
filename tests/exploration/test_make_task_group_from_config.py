@@ -20,11 +20,11 @@ except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
 from dpgen2.exploration.task import (
+    CalyTaskGroup,
     LmpTemplateTaskGroup,
     NPTTaskGroup,
-    CalyTaskGroup,
-    make_lmp_task_group_from_config,
     make_calypso_task_group_from_config,
+    make_lmp_task_group_from_config,
 )
 from dpgen2.exploration.task.calypso import (
     make_calypso_input,
@@ -126,4 +126,3 @@ MaxNumAtom = 100
     def test_caly_task_group(self):
         tgroup = make_calypso_task_group_from_config(self.config)
         self.assertTrue(isinstance(tgroup, CalyTaskGroup))
-
