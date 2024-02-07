@@ -10,13 +10,15 @@ from dpgen2.constants import (
     model_name_pattern,
     plm_input_name,
 )
+from dpgen2.exploration.task.caly_task_group import (
+    CalyTaskGroup,
+)
 from dpgen2.exploration.task.customized_lmp_template_task_group import (
     CustomizedLmpTemplateTaskGroup,
 )
 from dpgen2.exploration.task.lmp_template_task_group import (
     LmpTemplateTaskGroup,
 )
-from dpgen2.exploration.task.caly_task_group import CalyTaskGroup
 from dpgen2.exploration.task.npt_task_group import (
     NPTTaskGroup,
 )

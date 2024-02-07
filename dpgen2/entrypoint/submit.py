@@ -77,8 +77,8 @@ from dpgen2.exploration.task import (
     ExplorationTask,
     LmpTemplateTaskGroup,
     NPTTaskGroup,
-    make_lmp_task_group_from_config,
     make_calypso_task_group_from_config,
+    make_lmp_task_group_from_config,
     normalize_task_group_config,
 )
 from dpgen2.flow import (

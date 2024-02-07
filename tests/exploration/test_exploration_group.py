@@ -24,10 +24,10 @@ from unittest.mock import (
 )
 
 from dpgen2.constants import (
-    lmp_conf_name,
-    lmp_input_name,
     calypso_input_file,
     calypso_run_opt_file,
+    lmp_conf_name,
+    lmp_input_name,
 )
 from dpgen2.exploration.task import (
     ExplorationStage,
@@ -110,6 +110,7 @@ def swap_element(arg):
     bk = arg.copy()
     arg[1] = bk[0]
     arg[0] = bk[1]
+
 
 ref_input = """NumberOfSpecies = 2
 NameOfAtoms = Li La
@@ -584,9 +585,7 @@ class TestCalyGroup(unittest.TestCase):
             "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
         }
 
-
     def test_caly_task_group_make_task(self):
-
         tgroup = make_calypso_task_group_from_config(self.config)
         task_group = tgroup.make_task()
         # stage.add_task_group(tasks)
@@ -619,7 +618,6 @@ class TestCalyStage(unittest.TestCase):
         }
 
     def test(self):
-
         tgroup_1 = make_calypso_task_group_from_config(self.config_1)
         tgroup_2 = make_calypso_task_group_from_config(self.config_2)
 

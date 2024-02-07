@@ -3,9 +3,9 @@ from typing import (
 )
 
 from dpgen2.constants import (
+    calypso_check_opt_file,
     calypso_input_file,
     calypso_run_opt_file,
-    calypso_check_opt_file,
 )
 
 from .calypso import (
@@ -100,32 +100,32 @@ class CalyTaskGroup(ExplorationTaskGroup):
 
     def _make_caly_task(self) -> ExplorationTask:
         input_file_str, run_opt_str, check_opt_str = make_calypso_input(
-                self.numb_of_species,
-                self.name_of_atoms,
-                self.atomic_number,
-                self.numb_of_atoms,
-                self.distance_of_ions,
-                self.pop_size,
-                self.max_step,
-                self.system_name,
-                self.numb_of_formula,
-                self.pressure,
-                self.fmax,
-                self.volume,
-                self.ialgo,
-                self.pso_ratio,
-                self.icode,
-                self.numb_of_lbest,
-                self.numb_of_local_optim,
-                self.command,
-                self.max_time,
-                self.gen_type,
-                self.pick_up,
-                self.pick_step,
-                self.parallel,
-                self.split,
-                self.spec_space_group,
-            )
+            self.numb_of_species,
+            self.name_of_atoms,
+            self.atomic_number,
+            self.numb_of_atoms,
+            self.distance_of_ions,
+            self.pop_size,
+            self.max_step,
+            self.system_name,
+            self.numb_of_formula,
+            self.pressure,
+            self.fmax,
+            self.volume,
+            self.ialgo,
+            self.pso_ratio,
+            self.icode,
+            self.numb_of_lbest,
+            self.numb_of_local_optim,
+            self.command,
+            self.max_time,
+            self.gen_type,
+            self.pick_up,
+            self.pick_step,
+            self.parallel,
+            self.split,
+            self.spec_space_group,
+        )
         task = ExplorationTask()
         task.add_file(calypso_input_file, input_file_str)
         task.add_file(calypso_run_opt_file, run_opt_str)
