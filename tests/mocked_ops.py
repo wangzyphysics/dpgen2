@@ -966,16 +966,18 @@ class MockedCollRunCaly(CollRunCaly):
         work_dir.mkdir(exist_ok=True, parents=True)
 
         step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
-        results = ip["results"].resolve() if ip["results"] is not None else ip["results"]
-        opt_results_dir = ip["opt_results_dir"].resolve() if ip["opt_results_dir"] is not None else ip["opt_results_dir"]
+        results = (
+            ip["results"].resolve() if ip["results"] is not None else ip["results"]
+        )
+        opt_results_dir = (
+            ip["opt_results_dir"].resolve()
+            if ip["opt_results_dir"] is not None
+            else ip["opt_results_dir"]
+        )
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
-        if (
-            step is not None
-            and results is not None
-            and opt_results_dir is not None
-        ):
+        if step is not None and results is not None and opt_results_dir is not None:
             step = ip["step"].resolve()
             results = ip["results"].resolve()
             opt_results_dir = ip["opt_results_dir"].resolve()

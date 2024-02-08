@@ -62,7 +62,9 @@ class CollRunCaly(OP):
                 "task_name": Parameter(str),  # calypso_task.idx
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
                 "step": Artifact(type=Path, optional=True),  # step file
-                "results": Artifact(type=Path, optional=True),  # dir named results for evo
+                "results": Artifact(
+                    type=Path, optional=True
+                ),  # dir named results for evo
                 "opt_results_dir": Artifact(
                     type=Path, optional=True
                 ),  # dir contains POSCAR* CONTCAR* OUTCAR*
