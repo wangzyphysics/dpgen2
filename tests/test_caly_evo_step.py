@@ -274,12 +274,16 @@ class TestCalyEvoStep(unittest.TestCase):
         caly_run_opt_file = self.work_dir.joinpath("caly_run_opt.py")
         caly_run_opt_file.write_text("caly_run_opt")
         self.caly_run_opt_file = upload_artifact(caly_run_opt_file)
-        self.caly_run_opt_files = upload_artifact([caly_run_opt_file, caly_run_opt_file])
+        self.caly_run_opt_files = upload_artifact(
+            [caly_run_opt_file, caly_run_opt_file]
+        )
 
         caly_check_opt_file = self.work_dir.joinpath("caly_check_opt.py")
         caly_check_opt_file.write_text("caly_check_opt")
         self.caly_check_opt_file = upload_artifact(caly_check_opt_file)
-        self.caly_check_opt_files = upload_artifact([caly_check_opt_file, caly_check_opt_file])
+        self.caly_check_opt_files = upload_artifact(
+            [caly_check_opt_file, caly_check_opt_file]
+        )
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
@@ -380,4 +384,3 @@ class TestCalyEvoStep(unittest.TestCase):
         wf = Workflow(name="caly-evo-step", host=default_host)
         wf.add(caly_evo_step)
         wf.submit()
-
