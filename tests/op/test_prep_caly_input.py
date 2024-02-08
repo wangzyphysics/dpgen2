@@ -38,6 +38,7 @@ from dpgen2.exploration.task import (
 
 # isort: on
 
+
 def make_task_group_list(njobs):
     tgrp = BaseExplorationTaskGroup()
     for ii in range(njobs):
@@ -54,9 +55,15 @@ class TestPrepCalyInput(unittest.TestCase):
         njobs = 2
         self.caly_task_grp = make_task_group_list(njobs)
         self.task_name_path = [calypso_task_pattern % i for i in range(2)]
-        self.input_dat_list = [Path(i) / calypso_input_file for i in self.task_name_path]
-        self.caly_run_opt_list = [Path(i) / calypso_run_opt_file for i in self.task_name_path]
-        self.caly_check_opt_list = [Path(i) / calypso_check_opt_file for i in self.task_name_path]
+        self.input_dat_list = [
+            Path(i) / calypso_input_file for i in self.task_name_path
+        ]
+        self.caly_run_opt_list = [
+            Path(i) / calypso_run_opt_file for i in self.task_name_path
+        ]
+        self.caly_check_opt_list = [
+            Path(i) / calypso_check_opt_file for i in self.task_name_path
+        ]
 
     def tearDown(self):
         for work_dir in self.task_name_path:
@@ -77,9 +84,5 @@ class TestPrepCalyInput(unittest.TestCase):
         self.assertEqual(out["caly_run_opt_files"], self.caly_run_opt_list)
         self.assertEqual(out["caly_check_opt_files"], self.caly_check_opt_list)
         # check files details
-        self.assertEqual(
-            self.input_dat_list[0].read_text().strip("\n"), "input.dat_0"
-        )
-        self.assertEqual(
-            self.caly_run_opt_list[1].read_text().strip("\n"), "run_1"
-        )
+        self.assertEqual(self.input_dat_list[0].read_text().strip("\n"), "input.dat_0")
+        self.assertEqual(self.caly_run_opt_list[1].read_text().strip("\n"), "run_1")

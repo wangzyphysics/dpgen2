@@ -92,7 +92,11 @@ class PrepRunCaly(Steps):
         )
 
         # TODO: RunModelDevi
-        self._keys = ["prep-caly-input", "caly-evo-step-{{item}}", "run-caly-model-devi"]
+        self._keys = [
+            "prep-caly-input",
+            "caly-evo-step-{{item}}",
+            "run-caly-model-devi",
+        ]
         self.step_keys = {}
         ii = "prep-caly-input"
         self.step_keys[ii] = "--".join(["%s" % self.inputs.parameters["block_id"], ii])
@@ -243,14 +247,14 @@ def _prep_run_caly(
     )
     prep_run_caly_steps.add(run_caly_model_devi)
 
-    prep_run_caly_steps.outputs.parameters["task_names"].value_from_parameter = (
-        run_caly_model_devi.outputs.parameters["task_name"]
-    )
-    prep_run_caly_steps.outputs.artifacts["trajs"]._from = (
-        run_caly_model_devi.outputs.artifacts["traj"]
-    )
-    prep_run_caly_steps.outputs.artifacts["model_devis"]._from = (
-        run_caly_model_devi.outputs.artifacts["model_devi"]
-    )
+    prep_run_caly_steps.outputs.parameters[
+        "task_names"
+    ].value_from_parameter = run_caly_model_devi.outputs.parameters["task_name"]
+    prep_run_caly_steps.outputs.artifacts[
+        "trajs"
+    ]._from = run_caly_model_devi.outputs.artifacts["traj"]
+    prep_run_caly_steps.outputs.artifacts[
+        "model_devis"
+    ]._from = run_caly_model_devi.outputs.artifacts["model_devi"]
 
     return prep_run_caly_steps

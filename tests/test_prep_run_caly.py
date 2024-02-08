@@ -40,8 +40,8 @@ from dflow.python import (
 from dpgen2.constants import (
     calypso_check_opt_file,
     calypso_index_pattern,
-    calypso_run_opt_file,
     calypso_input_file,
+    calypso_run_opt_file,
 )
 
 try:
@@ -51,14 +51,18 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
+from dpgen2.exploration.task import (
+    BaseExplorationTaskGroup,
+    ExplorationTask,
+)
 from dpgen2.op.prep_caly_input import (
     PrepCalyInput,
 )
-from dpgen2.superop.caly_evo_step import (
-    CalyEvoStep,
-)
 from dpgen2.op.run_caly_model_devi import (
     RunCalyModelDevi,
+)
+from dpgen2.superop.caly_evo_step import (
+    CalyEvoStep,
 )
 from dpgen2.superop.prep_run_calypso import (
     PrepRunCaly,
@@ -76,10 +80,6 @@ from .mocked_ops import (
     MockedCollRunCaly,
     MockedPrepRunDPOptim,
     mocked_numb_models,
-)
-from dpgen2.exploration.task import (
-    BaseExplorationTaskGroup,
-    ExplorationTask,
 )
 
 default_config = normalize_step_dict(
