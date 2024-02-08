@@ -59,6 +59,7 @@ class CalyEvoStep(Steps):
     ):
         self._input_parameters = {
             "iter_num": InputParameter(type=int, value=0),
+            "cnt_num": InputParameter(type=int, value=0),
             "block_id": InputParameter(type=str, value=""),
             "task_name": InputParameter(type=str),
         }
@@ -177,9 +178,10 @@ def _caly_evo_step(
             "opt_results_dir": caly_evo_step_steps.inputs.artifacts["opt_results_dir"],
         },
         # key=step_keys["collect-run-calypso-{{item}}"],
-        key="collect-run-calypso-%s-%s"
+        key="collect-run-calypso-%s-%s-%s"
         % (
             caly_evo_step_steps.inputs.parameters["iter_num"],
+            caly_evo_step_steps.inputs.parameters["cnt_num"],
             caly_evo_step_steps.inputs.parameters["block_id"],
         ),
         executor=prep_executor,
@@ -197,7 +199,8 @@ def _caly_evo_step(
         ),
         parameters={
             "config": run_template_config,
-            "task_name": collect_run_calypso.outputs.parameters["task_name"],
+            # "task_name": collect_run_calypso.outputs.parameters["task_name"],
+            "task_name": caly_evo_step_steps.inputs.parameters["task_name"],
         },
         artifacts={
             "poscar_dir": collect_run_calypso.outputs.artifacts["poscar_dir"],
@@ -209,9 +212,10 @@ def _caly_evo_step(
                 "caly_check_opt_file"
             ],
         },
-        key="prep-run-dp-optim-%s-%s"
+        key="prep-run-dp-optim-%s-%s-%s"
         % (
             caly_evo_step_steps.inputs.parameters["iter_num"],
+            caly_evo_step_steps.inputs.parameters["cnt_num"],
             caly_evo_step_steps.inputs.parameters["block_id"],
         ),
         executor=prep_executor,  # cpu is enough to run calypso.x, default step config is c2m4
@@ -225,9 +229,11 @@ def _caly_evo_step(
         name=name + "-nextstep",
         template=caly_evo_step_steps,
         parameters={
-            "iter_num": caly_evo_step_steps.inputs.parameters["iter_num"] + 1,
+            "iter_num": caly_evo_step_steps.inputs.parameters["iter_num"],
+            "cnt_num": caly_evo_step_steps.inputs.parameters["cnt_num"] + 1,
             "block_id": caly_evo_step_steps.inputs.parameters["block_id"],
-            "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
+            # "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
+            "task_name": caly_evo_step_steps.inputs.parameters["task_name"] + "",
         },
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
@@ -252,6 +258,7 @@ def _caly_evo_step(
     caly_evo_step_steps.outputs.parameters[
         "task_name"
     ].value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
+    # caly_evo_step_steps.inputs.parameters["task_name"],
 
     caly_evo_step_steps.outputs.artifacts[
         "traj_result"

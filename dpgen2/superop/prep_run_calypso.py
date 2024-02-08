@@ -193,7 +193,7 @@ def _prep_run_caly(
                 "caly_run_opt_file",
                 "caly_check_opt_file",
             ],
-            output_parameter=["task_name"],
+            # output_parameter=["task_name"],
             output_artifact=["traj_result"],
             **template_slice_config,
         ),
