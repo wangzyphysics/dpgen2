@@ -80,6 +80,9 @@ from dpgen2.op.prep_lmp import (
 from dpgen2.op.prep_run_dp_optim import (
     PrepRunDPOptim,
 )
+from dpgen2.op.run_caly_model_devi import (
+    RunCalyModelDevi,
+)
 from dpgen2.op.run_dp_train import (
     RunDPTrain,
 )
@@ -1095,5 +1098,56 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
                 "traj_results_dir": work_dir / traj_results_dir,
                 "caly_run_opt_file": work_dir / caly_run_opt_file.name,
                 "caly_check_opt_file": work_dir / caly_check_opt_file.name,
+            }
+        )
+
+class MockedRunCalyModelDevi(RunCalyModelDevi):
+    @OP.exec_sign_check
+    def execute(
+        self,
+        ip: OPIO,
+    ) -> OPIO:
+        cwd = os.getcwd()
+
+        work_dir = Path(ip["task_name"])
+        work_dir.mkdir(parents=True, exist_ok=True)
+
+        type_map = ip["type_map"]
+
+        traj_dirs = ip["traj_dirs"]
+        traj_dirs = [traj_dir.resolve() for traj_dir in traj_dirs]
+
+        models_dir = ip["models"]
+        models_dir = [model.resolve() for model in models_dir]
+
+        dump_file_name = "traj.dump"
+        model_devi_file_name = "model_devi.out"
+
+        ref_dump_str = """ITEM: TIMESTEP
+1
+ITEM: NUMBER OF ATOMS
+2
+ITEM: BOX BOUNDS xy xz yz pp pp pp
+        0.0000000000        10.0000000000         0.0000000000
+        0.0000000000        10.0000000000         0.0000000000
+        0.0000000000        10.0000000000         0.0000000000
+ITEM: ATOMS id type x y z fx fy fz
+    1     1        0.0000000000         0.0000000000         0.0000000000        0.0000000000         0.0000000000         0.0000000000
+    2     2        5.0000000000         5.0000000000         5.0000000000        0.0000000000         0.0000000000         0.0000000000"""
+        os.chdir(work_dir)
+        f = open(dump_file_name, "a")
+        f.write(ref_dump_str)
+        f.close()
+
+        f = open(model_devi_file_name, "a")
+        f.write("# \n0 1 1 1 1 1 1")
+        f.close()
+
+        os.chdir(cwd)
+        return OPIO(
+            {
+                "task_name": str(work_dir),
+                "traj": work_dir / dump_file_name,
+                "model_devi": work_dir / model_devi_file_name,
             }
         )

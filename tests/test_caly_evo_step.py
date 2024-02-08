@@ -287,8 +287,8 @@ class TestCalyEvoStep(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
-        # for i in Path().glob("caly-evo-step-*"):
-        #     shutil.rmtree(i, ignore_errors=True)
+        for i in Path().glob("caly-evo-step-*"):
+            shutil.rmtree(i, ignore_errors=True)
         shutil.rmtree("upload", ignore_errors=True)
 
     @unittest.skip("temp skit")

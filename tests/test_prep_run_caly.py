@@ -80,6 +80,7 @@ from .mocked_ops import (
     MockedCollRunCaly,
     MockedPrepRunDPOptim,
     mocked_numb_models,
+    MockedRunCalyModelDevi,
 )
 
 default_config = normalize_step_dict(
@@ -123,8 +124,8 @@ class TestCalyEvoStep(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
-        # for i in Path().glob("caly-evo-step-*"):
-        #     shutil.rmtree(i, ignore_errors=True)
+        for i in Path().glob("prep-run-caly-step*"):
+            shutil.rmtree(i, ignore_errors=True)
         shutil.rmtree("upload", ignore_errors=True)
 
     def test(self):
@@ -140,7 +141,8 @@ class TestCalyEvoStep(unittest.TestCase):
             "prep-run-calypso",
             PrepCalyInput,
             caly_evo_step_op,
-            RunCalyModelDevi,
+            # RunCalyModelDevi,
+            MockedRunCalyModelDevi,
             prep_config=default_config,
             run_config=default_config,
             upload_python_packages=upload_python_packages,

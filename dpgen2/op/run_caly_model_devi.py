@@ -76,7 +76,7 @@ class RunCalyModelDevi(OP):
         ----------
         ip : dict
             Input dict with components:
-            - `type_map`: (`str`) The type map of elements.
+            - `type_map`: (`List[str]`) The type map of elements.
             - `task_name`: (`str`) The name of the task.
             - `traj_dirs`: (`Artifact(List[Path])`) The List of paths that contains trajectory files.
             - `models`: (`Artifact(List[Path])`) The frozen model to estimate the model deviation.

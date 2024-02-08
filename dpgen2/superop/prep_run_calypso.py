@@ -183,7 +183,6 @@ def _prep_run_caly(
             "int('{{item}}')",
             input_parameter=[
                 "task_name",
-                "iter_num",
             ],
             input_artifact=[
                 "input_file",
@@ -235,7 +234,7 @@ def _prep_run_caly(
         ),
         parameters={
             "type_map": prep_run_caly_steps.inputs.parameters["type_map"],
-            "task_name": caly_evo_step.outputs.parameters["task_name"],
+            "task_name": "run-calypso-model-devi",
         },
         artifacts={
             "traj_dirs": caly_evo_step.outputs.artifacts["traj_result"],
