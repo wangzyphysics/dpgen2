@@ -61,10 +61,10 @@ class CollRunCaly(OP):
                 "config": BigParameter(dict),  # for command
                 "task_name": Parameter(str),  # calypso_task.idx
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
-                "step": Artifact(Path),  # step file
-                "results": Artifact(Path),  # dir named results for evo
+                "step": Artifact(type=Path, optional=True),  # step file
+                "results": Artifact(type=Path, optional=True),  # dir named results for evo
                 "opt_results_dir": Artifact(
-                    Path
+                    type=Path, optional=True
                 ),  # dir contains POSCAR* CONTCAR* OUTCAR*
             }
         )
@@ -218,7 +218,7 @@ def prep_last_calypso_file(step, results, opt_results_dir):
         "none" not in step.name
         and "none" not in results.name
         and "none" not in opt_results_dir.name
-    ):
+    ) or (step is not None and results is not None or opt_results_dir is not None):
         Path(step.name).symlink_to(step)
         Path(results.name).symlink_to(results)
         for file_name in opt_results_dir.iterdir():

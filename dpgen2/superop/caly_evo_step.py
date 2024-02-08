@@ -68,9 +68,9 @@ class CalyEvoStep(Steps):
             "caly_run_opt_file": InputArtifact(),
             "caly_check_opt_file": InputArtifact(),
             # calypso evo needed
-            "results": InputArtifact(),
-            "step": InputArtifact(),
-            "opt_results_dir": InputArtifact(),
+            "results": InputArtifact(optional=True),
+            "step": InputArtifact(optional=True),
+            "opt_results_dir": InputArtifact(optional=True),
         }
         self._output_parameters = {
             "task_name": OutputParameter(),
@@ -152,6 +152,8 @@ def _caly_evo_step(
     prep_template_config = prep_config.pop("template_config")
     run_template_config = run_config.pop("template_config")
     # caly_config = run_template_config.pop("caly_config")
+    print(f"--------=-----------prep_config: {prep_config}")
+    print(f"--------=-----------run_config: {run_config}")
     prep_executor = init_executor(prep_config.pop("executor"))
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})

@@ -965,17 +965,21 @@ class MockedCollRunCaly(CollRunCaly):
         work_dir = Path(ip["task_name"])
         work_dir.mkdir(exist_ok=True, parents=True)
 
-        step = ip["step"].resolve()
-        results = ip["results"].resolve()
-        opt_results_dir = ip["opt_results_dir"].resolve()
+        step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
+        results = ip["results"].resolve() if ip["results"] is not None else ip["results"]
+        opt_results_dir = ip["opt_results_dir"].resolve() if ip["opt_results_dir"] is not None else ip["opt_results_dir"]
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
         if (
-            "none" not in step.name
-            and "none" not in results.name
-            and "none" not in opt_results_dir.name
+            step is not None
+            and results is not None
+            and opt_results_dir is not None
         ):
+            step = ip["step"].resolve()
+            results = ip["results"].resolve()
+            opt_results_dir = ip["opt_results_dir"].resolve()
+
             Path(step.name).symlink_to(step)
             Path(results.name).symlink_to(results)
             Path(opt_results_dir.name).symlink_to(opt_results_dir)
@@ -983,7 +987,7 @@ class MockedCollRunCaly(CollRunCaly):
         for i in range(5):
             Path(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
 
-        if "none" in step.name:
+        if step is None:
             Path("step").write_text("2")
         else:
             step_num = Path("step").read_text().strip()
@@ -991,7 +995,7 @@ class MockedCollRunCaly(CollRunCaly):
 
         step_num = int(Path("step").read_text().strip())
 
-        if "none" in results.name:
+        if results is None:
             Path("results").mkdir(parents=True, exist_ok=True)
             for i in range(1, step_num):
                 Path(f"results/pso_ini_{i}").write_text(f"pso_ini_{i}")

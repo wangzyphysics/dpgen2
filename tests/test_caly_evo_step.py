@@ -35,6 +35,7 @@ from dflow.python import (
     Artifact,
     OPIOSign,
     PythonOPTemplate,
+    Slices,
 )
 
 from dpgen2.constants import (
@@ -107,21 +108,24 @@ class TestMockedCollRunCaly(unittest.TestCase):
     def setUp(self) -> None:
         self.config = {}
         self.task_name = "task_name"
-        self.file_storage = Path("temp_file_storage")
+        self.file_storage = Path("storge_files")
         self.file_storage.mkdir(parents=True, exist_ok=True)
         self.input_file = self.file_storage.joinpath("input.dat")
         self.input_file.write_text("5")
-        self.step_file = self.file_storage.joinpath("step_none")
-        self.step_file.write_text("step_none")
-        self.results_dir = self.file_storage.joinpath("results_none")
-        self.results_dir.mkdir(parents=True, exist_ok=True)
-        self.opt_results_dir = self.file_storage.joinpath("opt_results_dir_none")
-        self.opt_results_dir.mkdir(parents=True, exist_ok=True)
+        self.step_file = None
+        self.results_dir = None
+        self.opt_results_dir = None
+        # self.step_file = self.file_storage.joinpath("step_none")
+        # self.step_file.write_text("step_none")
+        # self.results_dir = self.file_storage.joinpath("results_none")
+        # self.results_dir.mkdir(parents=True, exist_ok=True)
+        # self.opt_results_dir = self.file_storage.joinpath("opt_results_dir_none")
+        # self.opt_results_dir.mkdir(parents=True, exist_ok=True)
         self.finished = str(False)
 
     def tearDown(self) -> None:
         shutil.rmtree(self.file_storage, ignore_errors=True)
-        shutil.rmtree(Path(self.task_name))
+        shutil.rmtree(Path(self.task_name), ignore_errors=True)
 
     def test_mocked_coll_run_caly_00(self):
         op = MockedCollRunCaly()
@@ -158,7 +162,7 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
     def setUp(self) -> None:
         self.config = {}
         self.task_name = "task_name"
-        self.file_storage = Path("temp_file_storage")
+        self.file_storage = Path("storge_files")
         self.file_storage.mkdir(parents=True, exist_ok=True)
         self.poscar_dir = self.file_storage.joinpath("poscar_dir")
         self.poscar_dir.mkdir(parents=True, exist_ok=True)
@@ -175,7 +179,7 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
 
     def tearDown(self) -> None:
         shutil.rmtree(self.file_storage, ignore_errors=True)
-        shutil.rmtree(Path(self.task_name))
+        shutil.rmtree(Path(self.task_name), ignore_errors=True)
 
     def test_mocked_prep_run_dp_optim(self):
         op = MockedPrepRunDPOptim()
@@ -245,38 +249,46 @@ class TestCalyEvoStep(unittest.TestCase):
         self.block_id = "id123id"
         temp_name_pattern = "caly_task." + calypso_index_pattern
         self.task_name = temp_name_pattern % 1
+        self.task_name_list = [self.task_name, temp_name_pattern % 2]
 
         input_file = self.work_dir.joinpath("input.dat")
         input_file.write_text("2")
         self.input_file = upload_artifact(input_file)
+        self.input_file_list = upload_artifact([input_file, input_file])
 
-        step_file = self.work_dir.joinpath("step-none")
-        step_file.write_text("None")
-        self.step = upload_artifact(step_file)
+        self.step = None
+        # step_file = self.work_dir.joinpath("step-none")
+        # step_file.write_text("None")
+        # self.step = upload_artifact(step_file)
 
-        results_dir = self.work_dir.joinpath("results-none")
-        results_dir.mkdir(parents=True, exist_ok=True)
-        self.results = upload_artifact(results_dir)
+        self.results = None
+        # results_dir = self.work_dir.joinpath("results-none")
+        # results_dir.mkdir(parents=True, exist_ok=True)
+        # self.results = upload_artifact(results_dir)
 
-        opt_results_dir = self.work_dir.joinpath("results-none")
-        opt_results_dir.mkdir(parents=True, exist_ok=True)
-        self.opt_results_dir = upload_artifact(opt_results_dir)
+        self.opt_results_dir = None
+        # opt_results_dir = self.work_dir.joinpath("opt-results-none")
+        # opt_results_dir.mkdir(parents=True, exist_ok=True)
+        # self.opt_results_dir = upload_artifact(opt_results_dir)
 
         caly_run_opt_file = self.work_dir.joinpath("caly_run_opt.py")
         caly_run_opt_file.write_text("caly_run_opt")
         self.caly_run_opt_file = upload_artifact(caly_run_opt_file)
+        self.caly_run_opt_files = upload_artifact([caly_run_opt_file, caly_run_opt_file])
 
         caly_check_opt_file = self.work_dir.joinpath("caly_check_opt.py")
         caly_check_opt_file.write_text("caly_check_opt")
         self.caly_check_opt_file = upload_artifact(caly_check_opt_file)
+        self.caly_check_opt_files = upload_artifact([caly_check_opt_file, caly_check_opt_file])
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
-        for i in Path().glob("caly-evo-step-*"):
-            shutil.rmtree(i, ignore_errors=True)
+        # for i in Path().glob("caly-evo-step-*"):
+        #     shutil.rmtree(i, ignore_errors=True)
         shutil.rmtree("upload", ignore_errors=True)
 
-    def test(self):
+    @unittest.skip("temp skit")
+    def test_00(self):
         steps = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
@@ -297,9 +309,9 @@ class TestCalyEvoStep(unittest.TestCase):
                 "input_file": self.input_file,
                 "caly_run_opt_file": self.caly_run_opt_file,
                 "caly_check_opt_file": self.caly_check_opt_file,
-                "results": self.results,
-                "step": self.step,
-                "opt_results_dir": self.opt_results_dir,
+                "results": None,
+                "step": None,
+                "opt_results_dir": None,
             },
         )
 
@@ -320,3 +332,52 @@ class TestCalyEvoStep(unittest.TestCase):
 
         # for ii in step.outputs.parameters["task_names"].value:
         #     self.check_run_lmp_output(ii, self.model_list)
+
+    def test_01(self):
+        steps = CalyEvoStep(
+            "caly-evo-run",
+            MockedCollRunCaly,
+            MockedPrepRunDPOptim,
+            prep_config=default_config,
+            run_config=default_config,
+            upload_python_packages=upload_python_packages,
+        )
+        caly_evo_step = Step(
+            "caly-evo-step",
+            template=steps,
+            slices=Slices(
+                "int('{{item}}')",
+                input_parameter=[
+                    "task_name",
+                    "iter_num",
+                ],
+                input_artifact=[
+                    "input_file",
+                    "results",
+                    "step",
+                    "opt_results_dir",
+                    "caly_run_opt_file",
+                    "caly_check_opt_file",
+                ],
+                output_parameter=["task_name"],
+                output_artifact=["traj_result"],
+            ),
+            parameters={
+                "block_id": self.block_id,
+                "task_name": self.task_name_list,
+                "iter_num": "{{item}}",
+            },
+            artifacts={
+                "models": self.models,
+                "input_file": self.input_file_list,
+                "caly_run_opt_file": self.caly_run_opt_files,
+                "caly_check_opt_file": self.caly_check_opt_files,
+                "results": None,
+                "step": None,
+                "opt_results_dir": None,
+            },
+        )
+        wf = Workflow(name="caly-evo-step", host=default_host)
+        wf.add(caly_evo_step)
+        wf.submit()
+

@@ -170,20 +170,17 @@ def _prep_run_caly(
     )
     prep_run_caly_steps.add(prep_caly_input)
 
-    temp_value = [
-        Path("dir_none")
-        for _ in range(
-            # argo_len(prep_run_caly_steps.outputs.parameters["task_names"])
-            2
-            )
-    ]
+    temp_value = None
 
     caly_evo_step = Step(
         name="caly-evo-step",
         template=caly_evo_step_op,
         slices=Slices(
             "int('{{item}}')",
-            input_parameter=["task_name"],
+            input_parameter=[
+                "task_name",
+                "iter_num",
+            ],
             input_artifact=[
                 "input_file",
                 "results",
@@ -199,6 +196,7 @@ def _prep_run_caly(
         parameters={
             "block_id": prep_run_caly_steps.inputs.parameters["block_id"],
             "task_name": prep_caly_input.outputs.parameters["task_names"],
+            "iter_num": "{{item}}",
         },
         artifacts={
             "models": prep_run_caly_steps.inputs.artifacts["models"],
