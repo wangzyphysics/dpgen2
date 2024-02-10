@@ -262,6 +262,7 @@ def _block_cl(
             parameters={
                 "block_id": block_steps.inputs.parameters["block_id"],
                 "caly_task_grp": block_steps.inputs.parameters["expl_task_grp"],
+                "expl_config": block_steps.inputs.parameters["explore_config"],
                 "type_map": block_steps.inputs.parameters["type_map"],
             },
             artifacts={

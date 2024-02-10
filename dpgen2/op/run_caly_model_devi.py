@@ -21,6 +21,7 @@ from deepmd.calculator import (
 )
 from deepmd.infer import (
     calc_model_devi,
+    DeepPot
 )
 from dflow.python import (
     OP,
@@ -93,8 +94,11 @@ class RunCalyModelDevi(OP):
         type_map = ip["type_map"]
 
         models = ip["models"]
+        print(models)
         all_models = [model.resolve() for model in models]
-        graphs = [DP(model) for model in all_models]
+        print(all_models)
+        # graphs = [DP(model).dp for model in all_models]
+        graphs = [DeepPot(model).dp for model in all_models]
 
         work_dir = Path(ip["task_name"])
 
@@ -122,6 +126,7 @@ class RunCalyModelDevi(OP):
                         coord = atoms.get_positions().reshape(1, -1)
                         cell = atoms.get_cell().reshape(1, -1) if pbc else None
                         atom_types = atoms.numbers
+                        print(coord, cell, atom_types, graphs)
                         devi = calc_model_devi(coord, cell, atom_types, graphs)[0]
                         devi[0] = tcount
                         Devis.append(devi)

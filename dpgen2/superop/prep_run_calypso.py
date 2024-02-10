@@ -66,6 +66,7 @@ class PrepRunCaly(Steps):
         self._input_parameters = {
             "block_id": InputParameter(type=str, value=""),
             "caly_task_grp": InputParameter(),
+            "expl_config": InputParameter(),
             "type_map": InputParameter(),
         }
         self._input_artifacts = {
@@ -198,6 +199,7 @@ def _prep_run_caly(
         ),
         parameters={
             "block_id": prep_run_caly_steps.inputs.parameters["block_id"],
+            "expl_config": prep_run_caly_steps.inputs.parameters["expl_config"],
             "task_name": prep_caly_input.outputs.parameters["task_names"],
             "iter_num": "{{item}}",
         },

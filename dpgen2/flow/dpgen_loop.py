@@ -279,7 +279,6 @@ class ConcurrentLearning(Steps):
                 type=dict, value=cl_default_optional_parameter
             ),
         }
-        print("-------input_parameters in concurrentlearning", self._input_parameters)
 
         self._input_artifacts = {
             "init_models": InputArtifact(optional=True),

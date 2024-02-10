@@ -228,7 +228,7 @@ def make_naive_exploration_scheduler(
     config,
 ):
     # use npt task group
-    explore_style = config["explore"]["style"]
+    explore_style = config["explore"]["type"]
 
     if explore_style == "lmp":
         return make_lmp_naive_exploration_scheduler(config)
@@ -263,9 +263,9 @@ def make_calypso_naive_exploration_scheduler(config):
         # stage
         stage = ExplorationStage()
         for jj in job:
-            jconf = normalize_task_group_config(jj)
+            # jconf = normalize_task_group_config(jj)
             # make task group
-            tgroup = make_calypso_task_group_from_config(jconf)
+            tgroup = make_calypso_task_group_from_config(jj)
             # add the list to task group
             tasks = tgroup.make_task()
             stage.add_task_group(tasks)

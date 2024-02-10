@@ -126,7 +126,7 @@ class CollRunCaly(OP):
         """
         # command
         config = ip["config"] if ip["config"] is not None else {}
-        config = CollRunCaly.normalize_config(config)
+        # config = CollRunCaly.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
         # input.dat
         _input_file = ip["input_file"]
@@ -135,9 +135,15 @@ class CollRunCaly(OP):
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
 
-        step = ip["step"].resolve()
-        results = ip["results"].resolve()
-        opt_results_dir = ip["opt_results_dir"].resolve()
+        step = ip["step"].resolve() if ip["step"] is not None else ip["step"]
+        results = (
+            ip["results"].resolve() if ip["results"] is not None else ip["results"]
+        )
+        opt_results_dir = (
+            ip["opt_results_dir"].resolve()
+            if ip["opt_results_dir"] is not None
+            else ip["opt_results_dir"]
+        )
 
         with set_directory(work_dir):
             # prep files/dirs from last calypso run
@@ -216,11 +222,7 @@ config_args = CollRunCaly.calypso_args
 
 
 def prep_last_calypso_file(step, results, opt_results_dir):
-    if (
-        "none" not in step.name
-        and "none" not in results.name
-        and "none" not in opt_results_dir.name
-    ) or (step is not None and results is not None or opt_results_dir is not None):
+    if step is not None and results is not None or opt_results_dir is not None:
         Path(step.name).symlink_to(step)
         Path(results.name).symlink_to(results)
         for file_name in opt_results_dir.iterdir():

@@ -107,6 +107,7 @@ def make_task_group_list(njobs):
 @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
 class TestCalyEvoStep(unittest.TestCase):
     def setUp(self):
+        self.expl_config = {}
         self.work_dir = Path("storge_files")
         self.work_dir.mkdir(parents=True, exist_ok=True)
 
@@ -156,6 +157,7 @@ class TestCalyEvoStep(unittest.TestCase):
             parameters={
                 "block_id": self.block_id,
                 "caly_task_grp": self.caly_task_grp,
+                "expl_config": self.expl_config,
                 "type_map": self.type_map,
             },
             artifacts={

@@ -235,6 +235,7 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
 @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
 class TestCalyEvoStep(unittest.TestCase):
     def setUp(self):
+        self.expl_config = {}
         self.work_dir = Path("storge_files")
         self.work_dir.mkdir(parents=True, exist_ok=True)
 
@@ -305,6 +306,7 @@ class TestCalyEvoStep(unittest.TestCase):
             "caly-evo-step",
             template=steps,
             parameters={
+                "expl_config": self.expl_config,
                 "block_id": self.block_id,
                 "task_name": self.task_name,
                 "iter_num": 0,
@@ -371,6 +373,7 @@ class TestCalyEvoStep(unittest.TestCase):
                 "block_id": self.block_id,
                 "task_name": self.task_name_list,
                 "iter_num": "{{item}}",
+                "expl_config": self.expl_config,
             },
             artifacts={
                 "models": self.models,
