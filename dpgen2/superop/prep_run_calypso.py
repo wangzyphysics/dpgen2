@@ -250,7 +250,8 @@ def _prep_run_caly(
 
     prep_run_caly_steps.outputs.parameters[
         "task_names"
-    ].value_from_parameter = run_caly_model_devi.outputs.parameters["task_name"]
+    ].value_from_parameter = prep_caly_input.outputs.parameters["task_names"],
+    # run_caly_model_devi.outputs.parameters["task_name"]
     prep_run_caly_steps.outputs.artifacts[
         "trajs"
     ]._from = run_caly_model_devi.outputs.artifacts["traj"]

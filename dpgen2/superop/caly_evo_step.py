@@ -75,7 +75,7 @@ class CalyEvoStep(Steps):
             "opt_results_dir": InputArtifact(optional=True),
         }
         self._output_parameters = {
-            "task_name": OutputParameter(),
+            # "task_name": OutputParameter(),
         }
         self._output_artifacts = {
             "traj_result": OutputArtifact(),
@@ -93,14 +93,15 @@ class CalyEvoStep(Steps):
             ),
         )
 
-        # self._keys = ["collect-run-calypso", "prep-run-dp-optim"]
-        import numpy as np
-
         self.collect_run_calypso_keys = [
-            "collect-run-calypso--%06d" % np.random.randint(1, 9999) for i in range(10)
+            "%s--collect-run-calypso-%s-%s" % (self.inputs.parameters["block_id"], i, j)
+            for i in range(5)
+            for j in range(10)
         ]
         self.prep_run_dp_optim_keys = [
-            "prep-run-dp-optim--%06d" % np.random.randint(1, 9999) for i in range(10)
+            "%s--prep-run-dp-optim-%s-%s" % (self.inputs.parameters["block_id"], i, j)
+            for i in range(5)
+            for j in range(10)
         ]
         self._keys = self.collect_run_calypso_keys + self.prep_run_dp_optim_keys
         self.step_keys = {}
@@ -222,7 +223,7 @@ def _caly_evo_step(
     )
     caly_evo_step_steps.add(prep_run_dp_optim)
 
-    name = "calypso-nextstep-block"
+    name = "calypso-block"
     next_step = Step(
         name=name + "-nextstep",
         template=caly_evo_step_steps,
@@ -232,8 +233,8 @@ def _caly_evo_step(
             "block_id": caly_evo_step_steps.inputs.parameters["block_id"],
             "expl_config": caly_evo_step_steps.inputs.parameters["expl_config"],
             # "task_name": caly_evo_step_steps.inputs.parameters["task_name"] + "",
-            "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
-            # "task_name": collect_run_calypso.outputs.parameters["task_name"],
+            # "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
+            "task_name": collect_run_calypso.outputs.parameters["task_name"],
         },
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
@@ -254,16 +255,18 @@ def _caly_evo_step(
     )
     caly_evo_step_steps.add(next_step)
 
-    caly_evo_step_steps.outputs.parameters[
-        "task_name"
-    ].value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
+    # caly_evo_step_steps.outputs.parameters[
+    #     "task_name"
+    # ].value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
 
-    caly_evo_step_steps.outputs.artifacts[
-        "traj_result"
-    ].from_expression = if_expression(
-        _if=(collect_run_calypso.outputs.parameters["finished"] == "false"),
-        _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
-        _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
+    caly_evo_step_steps.outputs.artifacts["traj_result"].from_expression = (
+        if_expression(
+            _if=(collect_run_calypso.outputs.parameters["finished"] == "false"),
+            # _then=(next_step.outputs.artifacts["traj_result"]),
+            _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
+            # _else=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
+            _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
+        )
     )
 
     return caly_evo_step_steps

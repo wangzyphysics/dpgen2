@@ -115,6 +115,7 @@ class TestMockedCollRunCaly(unittest.TestCase):
         self.step_file = None
         self.results_dir = None
         self.opt_results_dir = None
+        self.cnt_num = 0
         # self.step_file = self.file_storage.joinpath("step_none")
         # self.step_file.write_text("step_none")
         # self.results_dir = self.file_storage.joinpath("results_none")
@@ -134,6 +135,7 @@ class TestMockedCollRunCaly(unittest.TestCase):
                 {
                     "config": self.config,
                     "task_name": self.task_name,
+                    "cnt_num": self.cnt_num,
                     "input_file": self.input_file,
                     "step": self.step_file,
                     "results": self.results_dir,
@@ -288,8 +290,8 @@ class TestCalyEvoStep(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
-        for i in Path().glob("caly-evo-step-*"):
-            shutil.rmtree(i, ignore_errors=True)
+        # for i in Path().glob("caly-evo-step-*"):
+        #     shutil.rmtree(i, ignore_errors=True)
         shutil.rmtree("upload", ignore_errors=True)
 
     @unittest.skip("temp skit")
@@ -366,7 +368,6 @@ class TestCalyEvoStep(unittest.TestCase):
                     "caly_run_opt_file",
                     "caly_check_opt_file",
                 ],
-                output_parameter=["task_name"],
                 output_artifact=["traj_result"],
             ),
             parameters={
