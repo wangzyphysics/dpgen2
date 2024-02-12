@@ -60,6 +60,7 @@ class CollRunCaly(OP):
             {
                 "config": BigParameter(dict),  # for command
                 "task_name": Parameter(str),  # calypso_task.idx
+                "cnt_num": Parameter(int),
                 "input_file": Artifact(Path),  # input.dat, !!! must be provided
                 "step": Artifact(type=Path, optional=True),  # step file
                 "results": Artifact(
@@ -76,7 +77,7 @@ class CollRunCaly(OP):
         return OPIOSign(
             {
                 "task_name": Parameter(str),  # calypso_task.idx
-                "finished": Parameter(str),  # True if step == maxstep
+                "finished": Parameter(str),  # True if cnt_num == maxstep
                 "poscar_dir": Artifact(Path),  # dir contains POSCAR* of next step
                 "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
@@ -124,6 +125,7 @@ class CollRunCaly(OP):
         TransientError
             On the failure of CALYPSO execution. Resubmit rule should be clear.
         """
+        cnt_num = ip["cnt_num"]
         # command
         config = ip["config"] if ip["config"] is not None else {}
         # config = CollRunCaly.normalize_config(config)
@@ -178,7 +180,7 @@ class CollRunCaly(OP):
                 shutil.copyfile(poscar, target)
 
             step = Path("step").read_text().strip()
-            finished = "true" if int(step) == int(max_step) + 1 else "false"
+            finished = "true" if int(cnt_num) == int(max_step) else "false"
             poscar_dir = "poscar_dir_none" if not finished else poscar_dir
             fake_traj = Path("traj_results_dir")
             fake_traj.mkdir(parents=True, exist_ok=True)

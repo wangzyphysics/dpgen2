@@ -957,6 +957,7 @@ class MockedCollRunCaly(CollRunCaly):
         ip: OPIO,
     ) -> OPIO:
         cwd = os.getcwd()
+        cnt_num = ip["cnt_num"]
         config = ip["config"] if ip["config"] is not None else {}
         # config = CollRunCaly.normalize_config(config)
         command = config.get("run_calypso_command", "calypso.x")
@@ -1017,8 +1018,9 @@ class MockedCollRunCaly(CollRunCaly):
         for poscar in Path().glob("POSCAR_*"):
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
-        finished = "true" if int(step_num) == int(max_step) + 1 else "false"
-        print(f"-------------step_num: {step_num}, -------max_step---:{max_step}")
+        finished = "true" if int(cnt_num) == int(max_step) else "false"
+        print(f"-------------cnt_num: {cnt_num}, -------max_step---:{max_step}")
+        print(f"-------------step_num: {step_num}")
         print(f"-------------finished: {finished}")
         fake_traj_dir = Path("traj_results_dir")
         fake_traj_dir.mkdir(parents=True, exist_ok=True)
@@ -1045,6 +1047,7 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
         cwd = os.getcwd()
 
         work_dir = Path(ip["task_name"])
+        print(f"--------=---------task_name: {work_dir}")
         work_dir.mkdir(parents=True, exist_ok=True)
 
         poscar_dir = ip["poscar_dir"]

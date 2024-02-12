@@ -169,6 +169,7 @@ def _caly_evo_step(
         parameters={
             "config": caly_evo_step_steps.inputs.parameters["expl_config"],
             "task_name": caly_evo_step_steps.inputs.parameters["task_name"],
+            "cnt_num": caly_evo_step_steps.inputs.parameters["cnt_num"],
         },
         artifacts={
             "input_file": caly_evo_step_steps.inputs.artifacts["input_file"],
@@ -232,6 +233,7 @@ def _caly_evo_step(
             "expl_config": caly_evo_step_steps.inputs.parameters["expl_config"],
             # "task_name": caly_evo_step_steps.inputs.parameters["task_name"] + "",
             "task_name": prep_run_dp_optim.outputs.parameters["task_name"],
+            # "task_name": collect_run_calypso.outputs.parameters["task_name"],
         },
         artifacts={
             "models": caly_evo_step_steps.inputs.artifacts["models"],
