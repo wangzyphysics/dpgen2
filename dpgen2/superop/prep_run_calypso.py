@@ -73,7 +73,7 @@ class PrepRunCaly(Steps):
             "models": InputArtifact(),
         }
         self._output_parameters = {
-            "task_names": OutputParameter(),
+            # "task_names": OutputParameter(),
         }
         self._output_artifacts = {
             "trajs": OutputArtifact(),
@@ -194,7 +194,7 @@ def _prep_run_caly(
                 "caly_check_opt_file",
             ],
             # output_parameter=["task_name"],
-            output_artifact=["traj_result"],
+            output_artifact=["traj_results"],
             **template_slice_config,
         ),
         parameters={
@@ -239,7 +239,7 @@ def _prep_run_caly(
             "task_name": "run-calypso-model-devi",
         },
         artifacts={
-            "traj_dirs": caly_evo_step.outputs.artifacts["traj_result"],
+            "traj_dirs": caly_evo_step.outputs.artifacts["traj_results"],
             "models": prep_run_caly_steps.inputs.artifacts["models"],
         },
         key=step_keys["run-caly-model-devi"],
@@ -248,9 +248,9 @@ def _prep_run_caly(
     )
     prep_run_caly_steps.add(run_caly_model_devi)
 
-    prep_run_caly_steps.outputs.parameters[
-        "task_names"
-    ].value_from_parameter = prep_caly_input.outputs.parameters["task_names"],
+    # prep_run_caly_steps.outputs.parameters[
+    #     "task_names"
+    # ].value_from_parameter = prep_caly_input.outputs.parameters["task_names"],
     # run_caly_model_devi.outputs.parameters["task_name"]
     prep_run_caly_steps.outputs.artifacts[
         "trajs"

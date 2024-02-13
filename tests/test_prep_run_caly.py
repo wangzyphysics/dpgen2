@@ -169,8 +169,8 @@ class TestCalyEvoStep(unittest.TestCase):
         wf.add(prep_run_caly_step)
         wf.submit()
 
-        # while wf.query_status() in ["Pending", "Running"]:
-        #     time.sleep(4)
+        while wf.query_status() in ["Pending", "Running"]:
+            time.sleep(4)
 
         self.assertEqual(wf.query_status(), "Succeeded")
         step = wf.query_step(name="prep-run-caly-step")[0]
