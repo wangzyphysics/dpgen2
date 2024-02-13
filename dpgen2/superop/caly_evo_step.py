@@ -78,7 +78,7 @@ class CalyEvoStep(Steps):
             # "task_name": OutputParameter(),
         }
         self._output_artifacts = {
-            "traj_result": OutputArtifact(),
+            "traj_results": OutputArtifact(),
         }
 
         super().__init__(
@@ -200,6 +200,8 @@ def _caly_evo_step(
         parameters={
             "config": caly_evo_step_steps.inputs.parameters["expl_config"],
             "task_name": caly_evo_step_steps.inputs.parameters["task_name"],
+            "finished": collect_run_calypso.outputs.parameters["finished"],
+            "cnt_num": caly_evo_step_steps.inputs.parameters["cnt_num"],
         },
         artifacts={
             "poscar_dir": collect_run_calypso.outputs.artifacts["poscar_dir"],
@@ -218,7 +220,7 @@ def _caly_evo_step(
             caly_evo_step_steps.inputs.parameters["cnt_num"],
         ),
         executor=prep_executor,  # cpu is enough to run calypso.x, default step config is c2m4
-        when="%s == false" % (collect_run_calypso.outputs.parameters["finished"]),
+        # when="%s == false" % (collect_run_calypso.outputs.parameters["finished"]),
         **run_config,
     )
     caly_evo_step_steps.add(prep_run_dp_optim)
@@ -259,13 +261,13 @@ def _caly_evo_step(
     #     "task_name"
     # ].value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
 
-    caly_evo_step_steps.outputs.artifacts["traj_result"].from_expression = (
+    caly_evo_step_steps.outputs.artifacts["traj_results"].from_expression = (
         if_expression(
             _if=(collect_run_calypso.outputs.parameters["finished"] == "false"),
-            # _then=(next_step.outputs.artifacts["traj_result"]),
-            _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
-            # _else=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
-            _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
+            _then=(next_step.outputs.artifacts["traj_results"]),
+            # _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
+            _else=(prep_run_dp_optim.outputs.artifacts["traj_results"]),
+            # _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
         )
     )
 

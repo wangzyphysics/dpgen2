@@ -189,6 +189,8 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
             OPIO(
                 {
                     "config": self.config,
+                    "finished": "false",
+                    "cnt_num": 0,
                     "task_name": self.task_name,
                     "poscar_dir": self.poscar_dir,
                     "models_dir": self.models_dir,
@@ -216,13 +218,13 @@ class TestMockedPrepRunDPOptim(unittest.TestCase):
             in list_optim_results_dir
         )
 
-        traj_results_dir = out["traj_results_dir"]
+        traj_results_dir = out["traj_results"]
         list_traj_results_dir = list(traj_results_dir.glob("*.traj"))
         counts_traj = len(list_traj_results_dir)
-        self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results_dir")
+        self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results")
         self.assertEqual(counts_traj, 5)
         self.assertTrue(
-            Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir
+            Path(self.task_name) / "traj_results" / "3.traj", list_traj_results_dir
         )
 
         self.assertEqual(
@@ -241,6 +243,7 @@ class TestCalyEvoStep(unittest.TestCase):
         self.work_dir = Path("storge_files")
         self.work_dir.mkdir(parents=True, exist_ok=True)
 
+        self.max_step = 2
         self.nmodels = mocked_numb_models
         self.model_list = []
         for ii in range(self.nmodels):
@@ -255,7 +258,7 @@ class TestCalyEvoStep(unittest.TestCase):
         self.task_name_list = [self.task_name, temp_name_pattern % 2]
 
         input_file = self.work_dir.joinpath("input.dat")
-        input_file.write_text("2")
+        input_file.write_text(str(self.max_step))
         self.input_file = upload_artifact(input_file)
         self.input_file_list = upload_artifact([input_file, input_file])
 
@@ -290,8 +293,10 @@ class TestCalyEvoStep(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
-        # for i in Path().glob("caly-evo-step-*"):
-        #     shutil.rmtree(i, ignore_errors=True)
+        for i in Path().glob("caly-evo-step-*"):
+            shutil.rmtree(i, ignore_errors=True)
+        for i in Path().glob("caly_task*"):
+            shutil.rmtree(i, ignore_errors=True)
         shutil.rmtree("upload", ignore_errors=True)
 
     @unittest.skip("temp skit")
@@ -368,7 +373,7 @@ class TestCalyEvoStep(unittest.TestCase):
                     "caly_run_opt_file",
                     "caly_check_opt_file",
                 ],
-                output_artifact=["traj_result"],
+                output_artifact=["traj_results"],
             ),
             parameters={
                 "block_id": self.block_id,
@@ -389,3 +394,21 @@ class TestCalyEvoStep(unittest.TestCase):
         wf = Workflow(name="caly-evo-step", host=default_host)
         wf.add(caly_evo_step)
         wf.submit()
+
+        while wf.query_status() in ["Pending", "Running"]:
+            time.sleep(4)
+
+        self.assertEqual(wf.query_status(), "Succeeded")
+        step = wf.query_step(name="caly-evo-step")[0]
+        self.assertEqual(step.phase, "Succeeded")
+
+        download_artifact(step.outputs.artifacts["traj_results"])
+
+        for idx, name in enumerate(self.task_name_list):
+            cwd = Path().cwd()
+            os.chdir(Path(name))
+            traj_list = list(Path().rglob("*.traj"))
+            self.assertEqual(len(traj_list), 5 * self.max_step)
+            self.assertTrue(Path("traj_results").joinpath(f"{idx}.2.traj") in traj_list)
+            os.chdir(cwd)
+

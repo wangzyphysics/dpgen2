@@ -95,6 +95,7 @@ class TestCollRunCaly(unittest.TestCase):
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
+                    "cnt_num": 0,
                     "input_file": self.input_file,
                     "step": self.step_file,
                     "results": self.results_dir,
@@ -104,13 +105,13 @@ class TestCollRunCaly(unittest.TestCase):
         )
         # check output
         self.assertEqual(
-            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none")
+            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir")
         )
         self.assertEqual(out["task_name"], self.task_name)
         self.assertEqual(out["input_file"], self.input_file)
         self.assertEqual(out["step"], Path(self.task_name) / "step")
         self.assertEqual(out["results"], Path(self.task_name) / "results")
-        self.assertEqual(out["finished"], "False")
+        self.assertEqual(out["finished"], "false")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
     def test_step_no_eq_maxstep_02(self, mocked_run):
@@ -131,6 +132,7 @@ class TestCollRunCaly(unittest.TestCase):
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
+                    "cnt_num": 0,
                     "input_file": self.input_file,
                     "step": self.step_file,
                     "results": self.results_dir,
@@ -140,9 +142,9 @@ class TestCollRunCaly(unittest.TestCase):
         )
         # check output
         self.assertEqual(
-            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir_none")
+            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir")
         )
-        self.assertEqual(out["finished"], "False")
+        self.assertEqual(out["finished"], "false")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
     def test_step_eq_maxstep_03(self, mocked_run):
@@ -163,6 +165,7 @@ class TestCollRunCaly(unittest.TestCase):
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
+                    "cnt_num": 0,
                     "input_file": self.input_file,
                     "step": self.step_file,
                     "results": self.results_dir,
@@ -173,7 +176,7 @@ class TestCollRunCaly(unittest.TestCase):
         # check output
         self.assertEqual(len(list(out["poscar_dir"].rglob("POSCAR_*"))), 5)
         self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir"))
-        self.assertEqual(out["finished"], "True")
+        self.assertEqual(out["finished"], "false")
 
     @patch("dpgen2.op.collect_run_caly.run_command")
     def test_error_04(self, mocked_run):
@@ -196,6 +199,7 @@ class TestCollRunCaly(unittest.TestCase):
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
+                    "cnt_num": 0,
                     "input_file": self.input_file,
                     "step": self.step_file,
                     "results": self.results_dir,

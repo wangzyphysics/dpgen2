@@ -82,9 +82,6 @@ class CollRunCaly(OP):
                 "input_file": Artifact(Path),  # input.dat
                 "results": Artifact(Path),  # calypso generated results
                 "step": Artifact(Path),  # step
-                "fake_traj_results_dir": Artifact(
-                    Path
-                ),  # dir contains POSCAR* of next step
             }
         )
 
@@ -118,7 +115,6 @@ class CollRunCaly(OP):
             - `input_file`: (`Path`) The input file of the task (input.dat).
             - `step`: (`Path`) The step file.
             - `results`: (`Path`) The results dir.
-            - `fake_traj_results_dir`: (`Path`) The fake traj dir.
 
         Raises
         ------
@@ -181,9 +177,9 @@ class CollRunCaly(OP):
 
             step = Path("step").read_text().strip()
             finished = "true" if int(cnt_num) == int(max_step) else "false"
-            poscar_dir = "poscar_dir_none" if not finished else poscar_dir
-            fake_traj = Path("traj_results_dir")
-            fake_traj.mkdir(parents=True, exist_ok=True)
+            # poscar_dir = "poscar_dir_none" if not finished else poscar_dir
+            # fake_traj = Path("traj_results_dir")
+            # fake_traj.mkdir(parents=True, exist_ok=True)
 
         ret_dict = {
             "task_name": str(work_dir),
@@ -193,7 +189,7 @@ class CollRunCaly(OP):
             "input_file": _input_file,
             "step": work_dir.joinpath("step"),
             "results": work_dir.joinpath("results"),
-            "fake_traj_results_dir": work_dir.joinpath(fake_traj),
+            # "fake_traj_results_dir": work_dir.joinpath(fake_traj),
         }
 
         return OPIO(ret_dict)

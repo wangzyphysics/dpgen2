@@ -1022,8 +1022,6 @@ class MockedCollRunCaly(CollRunCaly):
         print(f"-------------cnt_num: {cnt_num}, -------max_step---:{max_step}")
         print(f"-------------step_num: {step_num}")
         print(f"-------------finished: {finished}")
-        fake_traj_dir = Path("traj_results_dir")
-        fake_traj_dir.mkdir(parents=True, exist_ok=True)
 
         os.chdir(cwd)
         ret_dict = {
@@ -1033,7 +1031,6 @@ class MockedCollRunCaly(CollRunCaly):
             "input_file": work_dir.joinpath(input_file.name),
             "results": work_dir.joinpath("results"),
             "step": work_dir.joinpath("step"),
-            "fake_traj_results_dir": work_dir.joinpath(fake_traj_dir),
         }
         return OPIO(ret_dict)
 
@@ -1046,7 +1043,9 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
     ) -> OPIO:
         cwd = os.getcwd()
 
+        finished = ip["finished"]
         work_dir = Path(ip["task_name"])
+        cnt_num = ip["cnt_num"]
         print(f"--------=---------task_name: {work_dir}")
         work_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1075,30 +1074,37 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
             Path().joinpath(f"OUTCAR_{str(i)}").write_text(f"OUTCAR_{str(i)}")
             Path().joinpath(f"{str(i)}.traj").write_text(f"{str(i)}.traj")
 
-        optim_results_dir = Path("optim_results_dir")
-        optim_results_dir.mkdir(parents=True, exist_ok=True)
-        for poscar in Path().glob("POSCAR_*"):
-            target = optim_results_dir.joinpath(poscar.name)
-            shutil.copyfile(poscar, target)
-        for contcar in Path().glob("CONTCAR_*"):
-            target = optim_results_dir.joinpath(contcar.name)
-            shutil.copyfile(contcar, target)
-        for outcar in Path().glob("OUTCAR_*"):
-            target = optim_results_dir.joinpath(outcar.name)
-            shutil.copyfile(outcar, target)
+        if finished == "false":
+            optim_results_dir = Path("optim_results_dir")
+            optim_results_dir.mkdir(parents=True, exist_ok=True)
+            for poscar in Path().glob("POSCAR_*"):
+                target = optim_results_dir.joinpath(poscar.name)
+                shutil.copyfile(poscar, target)
+            for contcar in Path().glob("CONTCAR_*"):
+                target = optim_results_dir.joinpath(contcar.name)
+                shutil.copyfile(contcar, target)
+            for outcar in Path().glob("OUTCAR_*"):
+                target = optim_results_dir.joinpath(outcar.name)
+                shutil.copyfile(outcar, target)
 
-        traj_results_dir = Path("traj_results_dir")
-        traj_results_dir.mkdir(parents=True, exist_ok=True)
-        for traj in Path().glob("*.traj"):
-            target = traj_results_dir.joinpath(traj.name)
-            shutil.copyfile(traj, target)
+            traj_results_dir = Path("traj_results")
+            traj_results_dir.mkdir(parents=True, exist_ok=True)
+            for traj in Path().glob("*.traj"):
+                target = traj_results_dir.joinpath(str(cnt_num) + "." + traj.name)
+                shutil.copyfile(traj, target)
+        else:
+            optim_results_dir = Path("optim_results_dir")
+            optim_results_dir.mkdir(parents=True, exist_ok=True)
+
+            traj_results_dir = Path("traj_results")
+            traj_results_dir.mkdir(parents=True, exist_ok=True)
 
         os.chdir(cwd)
         return OPIO(
             {
                 "task_name": str(work_dir),
                 "optim_results_dir": work_dir / optim_results_dir,
-                "traj_results_dir": work_dir / traj_results_dir,
+                "traj_results": work_dir / traj_results_dir,
                 "caly_run_opt_file": work_dir / caly_run_opt_file.name,
                 "caly_check_opt_file": work_dir / caly_check_opt_file.name,
             }

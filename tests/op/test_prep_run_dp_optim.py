@@ -105,6 +105,8 @@ class TestPrepRunDPOptim(unittest.TestCase):
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
+                    "finished": "false",
+                    "cnt_num": 0,
                     "poscar_dir": self.poscar_dir,
                     "models_dir": self.models_dir,
                     "caly_run_opt_file": self.caly_run_opt_file,
@@ -130,13 +132,13 @@ class TestPrepRunDPOptim(unittest.TestCase):
             in list_optim_results_dir
         )
 
-        traj_results_dir = out["traj_results_dir"]
+        traj_results_dir = out["traj_results"]
         list_traj_results_dir = list(traj_results_dir.glob("*.traj"))
         counts_traj = len(list_traj_results_dir)
-        self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results_dir")
+        self.assertEqual(traj_results_dir, Path(self.task_name) / "traj_results")
         self.assertEqual(counts_traj, 5)
         self.assertTrue(
-            Path(self.task_name) / "traj_results/dir" / "3.traj", list_traj_results_dir
+            Path(self.task_name) / "traj_results" / "0.3.traj" in list_traj_results_dir
         )
 
         self.assertEqual(
@@ -167,6 +169,8 @@ class TestPrepRunDPOptim(unittest.TestCase):
                 {
                     "config": {"run_calypso_command": "echo 1"},
                     "task_name": calypso_task_pattern % 0,
+                    "finished": "false",
+                    "cnt_num": 0,
                     "poscar_dir": self.poscar_dir,
                     "models_dir": self.models_dir,
                     "caly_run_opt_file": self.caly_run_opt_file,
