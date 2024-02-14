@@ -76,7 +76,8 @@ ITEM: BOX BOUNDS xy xz yz pp pp pp
         0.0000000000        10.0000000000         0.0000000000
 ITEM: ATOMS id type x y z fx fy fz
     1     1        0.0000000000         0.0000000000         0.0000000000        0.0000000000         0.0000000000         0.0000000000
-    2     2        5.0000000000         5.0000000000         5.0000000000        0.0000000000         0.0000000000         0.0000000000"""
+    2     2        5.0000000000         5.0000000000         5.0000000000        0.0000000000         0.0000000000         0.0000000000
+"""
         self.type_map = ["H", "He"]
         self.task_name = self.work_dir.joinpath(calypso_task_pattern % 0)
         self.traj_dirs = [self.traj_file_1, self.traj_file_2]
