@@ -16,13 +16,12 @@ from ase.io import (
     read,
     write,
 )
+from ase.build import make_supercell
 from deepmd.calculator import (
     DP,
 )
-from deepmd.infer import (
-    calc_model_devi,
-    DeepPot
-)
+from deepmd.infer import calc_model_devi
+from deepmd.infer import DeepPot as DP
 from dflow.python import (
     OP,
     OPIO,
@@ -94,11 +93,9 @@ class RunCalyModelDevi(OP):
         type_map = ip["type_map"]
 
         models = ip["models"]
-        print(models)
         all_models = [model.resolve() for model in models]
-        print(all_models)
         # graphs = [DP(model).dp for model in all_models]
-        graphs = [DeepPot(model).dp for model in all_models]
+        graphs = [DP(model) for model in all_models]
 
         work_dir = Path(ip["task_name"])
 
@@ -125,9 +122,8 @@ class RunCalyModelDevi(OP):
                         pbc = np.all(atoms.get_pbc())
                         coord = atoms.get_positions().reshape(1, -1)
                         cell = atoms.get_cell().reshape(1, -1) if pbc else None
-                        atom_types = atoms.numbers
-                        print(coord, cell, atom_types, graphs)
-                        devi = calc_model_devi(coord, cell, atom_types, graphs)[0]
+                        atype = [type_map.index(atom.symbol) for atom in atoms]
+                        devi = calc_model_devi(coord, cell, atype, graphs)[0]
                         devi[0] = tcount
                         Devis.append(devi)
                         tcount += 1
@@ -198,7 +194,7 @@ def atoms2lmpdump(atoms, struc_idx, type_map):
             atom.position[2],
         )
         dump_str += "%20.10f %20.10f %20.10f\n" % (0, 0, 0)
-    dump_str = dump_str.strip("\n")
+    # dump_str = dump_str.strip("\n")
     return dump_str
 
 
@@ -210,6 +206,8 @@ def parse_traj(traj_file) -> None | List[Atoms]:
     assert numb_traj >= 1, "traj file is broken."
 
     origin = trajs[0]
+    if len(origin) == 1:
+        origin = make_supercell(origin, [[2, 0, 0], [0, 2, 0], [0, 0, 2]])
     dis_mtx = origin.get_all_distances(mic=True)
     row, col = np.diag_indices_from(dis_mtx)
     dis_mtx[row, col] = np.nan
@@ -220,7 +218,7 @@ def parse_traj(traj_file) -> None | List[Atoms]:
             selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
         elif 5 <= len(trajs) < 20:
             selected_traj = [
-                trajs[np.random.randint(4, len(trajs) - 1)] for _ in range(4)
+                trajs[np.random.randint(3, len(trajs) - 1)] for _ in range(4)
             ]
             selected_traj.append(trajs[-1])
         elif 3 <= len(trajs) < 5:
