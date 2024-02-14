@@ -14,6 +14,7 @@ from dflow.python import (
     Artifact,
     BigParameter,
     OPIOSign,
+    Parameter,
 )
 
 from dpgen2.constants import (
@@ -314,7 +315,7 @@ class PrepCalyInput(OP):
         return OPIOSign(
             {
                 "iter_nums": BigParameter(List[int]),
-                "task_names": BigParameter(List[str]),  # task dir names
+                "task_names": Parameter(List[str]),  # task dir names
                 "input_dat_files": Artifact(List[Path]),  # `input.dat`s
                 "caly_run_opt_files": Artifact(List[Path]),
                 "caly_check_opt_files": Artifact(List[Path]),
