@@ -17,11 +17,6 @@ from ase.io import (
     write,
 )
 from ase.build import make_supercell
-from deepmd.calculator import (
-    DP,
-)
-from deepmd.infer import calc_model_devi
-from deepmd.infer import DeepPot as DP
 from dflow.python import (
     OP,
     OPIO,
@@ -90,6 +85,10 @@ class RunCalyModelDevi(OP):
             - `model_devi`: (`Artifact(Path)`) The model deviation. The order of recorded model deviations should be consistent with the order of frames in `traj`.
 
         """
+
+        from deepmd.infer import calc_model_devi
+        from deepmd.infer import DeepPot as DP
+
         type_map = ip["type_map"]
 
         models = ip["models"]
