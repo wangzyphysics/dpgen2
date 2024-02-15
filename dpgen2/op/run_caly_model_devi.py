@@ -88,8 +88,10 @@ class RunCalyModelDevi(OP):
 
         """
 
-        from deepmd.infer import calc_model_devi
         from deepmd.infer import DeepPot as DP
+        from deepmd.infer import (
+            calc_model_devi,
+        )
 
         type_map = ip["type_map"]
 
