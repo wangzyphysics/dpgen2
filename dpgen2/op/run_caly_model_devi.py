@@ -48,7 +48,7 @@ class RunCalyModelDevi(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "type_map": BigParameter(List[str]),
+                "type_map": Parameter(List[str]),
                 "task_name": Parameter(str),
                 "traj_dirs": Artifact(List[Path]),
                 "models": Artifact(List[Path]),
