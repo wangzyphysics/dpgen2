@@ -104,9 +104,7 @@ class TestCollRunCaly(unittest.TestCase):
             )
         )
         # check output
-        self.assertEqual(
-            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir")
-        )
+        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir"))
         self.assertEqual(out["task_name"], self.task_name)
         self.assertEqual(out["input_file"], self.input_file)
         self.assertEqual(out["step"], Path(self.task_name) / "step")
@@ -141,9 +139,7 @@ class TestCollRunCaly(unittest.TestCase):
             )
         )
         # check output
-        self.assertEqual(
-            out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir")
-        )
+        self.assertEqual(out["poscar_dir"], Path(self.task_name).joinpath("poscar_dir"))
         self.assertEqual(out["finished"], "false")
 
     @patch("dpgen2.op.collect_run_caly.run_command")

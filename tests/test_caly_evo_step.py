@@ -411,4 +411,3 @@ class TestCalyEvoStep(unittest.TestCase):
             self.assertEqual(len(traj_list), 5 * self.max_step)
             self.assertTrue(Path("traj_results").joinpath(f"{idx}.2.traj") in traj_list)
             os.chdir(cwd)
-

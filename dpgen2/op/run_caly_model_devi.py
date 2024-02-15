@@ -9,6 +9,9 @@ import numpy as np
 from ase import (
     Atoms,
 )
+from ase.build import (
+    make_supercell,
+)
 from ase.geometry import (
     cellpar_to_cell,
 )
@@ -16,7 +19,6 @@ from ase.io import (
     read,
     write,
 )
-from ase.build import make_supercell
 from dflow.python import (
     OP,
     OPIO,

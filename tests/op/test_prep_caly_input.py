@@ -49,7 +49,10 @@ def make_task_group_list(njobs):
     for ii in range(njobs):
         tt = ExplorationTask()
         tt.add_file(calypso_input_file, f"input.dat_{ii}")
-        tt.add_file(calypso_run_opt_file, calypso_run_opt_str + calypso_run_opt_str_end % (0.01, 0.01))
+        tt.add_file(
+            calypso_run_opt_file,
+            calypso_run_opt_str + calypso_run_opt_str_end % (0.01, 0.01),
+        )
         tt.add_file(calypso_check_opt_file, calypso_check_opt_str)
         tgrp.add_task(tt)
     return tgrp

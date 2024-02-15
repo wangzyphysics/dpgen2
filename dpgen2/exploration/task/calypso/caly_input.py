@@ -15,7 +15,6 @@ from dpgen2.constants import (
     lmp_traj_name,
 )
 
-
 calypso_run_opt_str = """#!/usr/bin/env python3
 
 import os

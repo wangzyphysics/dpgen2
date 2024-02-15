@@ -261,14 +261,14 @@ def _caly_evo_step(
     #     "task_name"
     # ].value_from_parameter = collect_run_calypso.outputs.parameters["task_name"]
 
-    caly_evo_step_steps.outputs.artifacts["traj_results"].from_expression = (
-        if_expression(
-            _if=(collect_run_calypso.outputs.parameters["finished"] == "false"),
-            _then=(next_step.outputs.artifacts["traj_results"]),
-            # _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
-            _else=(prep_run_dp_optim.outputs.artifacts["traj_results"]),
-            # _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
-        )
+    caly_evo_step_steps.outputs.artifacts[
+        "traj_results"
+    ].from_expression = if_expression(
+        _if=(collect_run_calypso.outputs.parameters["finished"] == "false"),
+        _then=(next_step.outputs.artifacts["traj_results"]),
+        # _then=(prep_run_dp_optim.outputs.artifacts["traj_results_dir"]),
+        _else=(prep_run_dp_optim.outputs.artifacts["traj_results"]),
+        # _else=(collect_run_calypso.outputs.artifacts["fake_traj_results_dir"]),
     )
 
     return caly_evo_step_steps
