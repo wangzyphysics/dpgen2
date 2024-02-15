@@ -413,9 +413,9 @@ def _loop(
         executor=step_executor,
         **step_config,
     )
-    scheduler_step.template.outputs.parameters["exploration_scheduler"].global_name = (
+    scheduler_step.template.outputs.parameters[
         "exploration_scheduler"
-    )
+    ].global_name = "exploration_scheduler"
     steps.add(scheduler_step)
 
     id_step = Step(
@@ -475,12 +475,12 @@ def _loop(
     )
     steps.add(next_step)
 
-    steps.outputs.parameters["exploration_scheduler"].value_from_expression = (
-        if_expression(
-            _if=(scheduler_step.outputs.parameters["converged"] == True),
-            _then=scheduler_step.outputs.parameters["exploration_scheduler"],
-            _else=next_step.outputs.parameters["exploration_scheduler"],
-        )
+    steps.outputs.parameters[
+        "exploration_scheduler"
+    ].value_from_expression = if_expression(
+        _if=(scheduler_step.outputs.parameters["converged"] == True),
+        _then=scheduler_step.outputs.parameters["exploration_scheduler"],
+        _else=next_step.outputs.parameters["exploration_scheduler"],
     )
     steps.outputs.artifacts["models"].from_expression = if_expression(
         _if=(scheduler_step.outputs.parameters["converged"] == True),
@@ -527,9 +527,9 @@ def _dpgen(
         executor=step_executor,
         **step_config,
     )
-    scheduler_step.template.outputs.parameters["exploration_scheduler"].global_name = (
+    scheduler_step.template.outputs.parameters[
         "exploration_scheduler"
-    )
+    ].global_name = "exploration_scheduler"
     steps.add(scheduler_step)
 
     id_step = Step(
@@ -587,9 +587,9 @@ def _dpgen(
     )
     steps.add(loop_step)
 
-    steps.outputs.parameters["exploration_scheduler"].value_from_parameter = (
-        loop_step.outputs.parameters["exploration_scheduler"]
-    )
+    steps.outputs.parameters[
+        "exploration_scheduler"
+    ].value_from_parameter = loop_step.outputs.parameters["exploration_scheduler"]
     steps.outputs.artifacts["models"]._from = loop_step.outputs.artifacts["models"]
     steps.outputs.artifacts["iter_data"]._from = loop_step.outputs.artifacts[
         "iter_data"

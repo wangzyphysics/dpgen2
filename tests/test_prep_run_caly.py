@@ -79,8 +79,8 @@ from .context import (
 from .mocked_ops import (
     MockedCollRunCaly,
     MockedPrepRunDPOptim,
-    mocked_numb_models,
     MockedRunCalyModelDevi,
+    mocked_numb_models,
 )
 
 default_config = normalize_step_dict(

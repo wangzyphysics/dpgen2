@@ -9,6 +9,9 @@ import numpy as np
 from ase import (
     Atoms,
 )
+from ase.build import (
+    make_supercell,
+)
 from ase.geometry import (
     cellpar_to_cell,
 )
@@ -16,12 +19,13 @@ from ase.io import (
     read,
     write,
 )
-from ase.build import make_supercell
 from deepmd.calculator import (
     DP,
 )
-from deepmd.infer import calc_model_devi
 from deepmd.infer import DeepPot as DP
+from deepmd.infer import (
+    calc_model_devi,
+)
 from dflow.python import (
     OP,
     OPIO,
