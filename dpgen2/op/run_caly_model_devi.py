@@ -3,6 +3,7 @@ from pathlib import (
 )
 from typing import (
     List,
+    Union,
 )
 
 import numpy as np
@@ -88,8 +89,10 @@ class RunCalyModelDevi(OP):
 
         """
 
-        from deepmd.infer import calc_model_devi
         from deepmd.infer import DeepPot as DP
+        from deepmd.infer import (
+            calc_model_devi,
+        )
 
         type_map = ip["type_map"]
 
@@ -199,7 +202,7 @@ def atoms2lmpdump(atoms, struc_idx, type_map):
     return dump_str
 
 
-def parse_traj(traj_file) -> None | List[Atoms]:
+def parse_traj(traj_file) -> Union[None, List[Atoms]]:
     # optimization will at least return one structures in traj file
     trajs = read(traj_file, index=":", format="traj")
 

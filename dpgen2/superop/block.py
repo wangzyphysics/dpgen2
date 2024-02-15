@@ -12,6 +12,7 @@ from typing import (
     Optional,
     Set,
     Type,
+    Union,
 )
 
 from dflow import (
@@ -86,7 +87,7 @@ class ConcurrentLearningBlock(Steps):
         name: str,
         exploration_style,
         prep_run_dp_train_op: PrepRunDPTrain,
-        prep_run_explore_op: PrepRunLmp | PrepRunCaly,
+        prep_run_explore_op: Union[PrepRunLmp, PrepRunCaly],
         select_confs_op: Type[OP],
         prep_run_fp_op: PrepRunFp,
         collect_data_op: Type[OP],
