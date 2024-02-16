@@ -89,8 +89,8 @@ class RunCalyModelDevi(OP):
 
         """
 
-        from deepmd.infer import DeepPot as DP
         from deepmd.infer import (
+            DeepPot,
             calc_model_devi,
         )
 
@@ -98,8 +98,7 @@ class RunCalyModelDevi(OP):
 
         models = ip["models"]
         all_models = [model.resolve() for model in models]
-        # graphs = [DP(model).dp for model in all_models]
-        graphs = [DP(model) for model in all_models]
+        graphs = [DeepPot(model) for model in all_models]
 
         work_dir = Path(ip["task_name"])
 

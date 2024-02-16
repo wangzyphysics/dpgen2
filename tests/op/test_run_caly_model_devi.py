@@ -39,9 +39,9 @@ from dpgen2.utils import (
     BinaryFileInput,
 )
 
-from .context import (
-    dpgen2,
-)
+# from .context import (
+#     dpgen2,
+# )
 
 # isort: on
 
@@ -103,8 +103,10 @@ ITEM: ATOMS id type x y z fx fy fz
         dump_str = atoms2lmpdump(self.atoms_normal, 1, self.type_map)
         self.assertEqual(dump_str, self.ref_dump_str)
 
-    @patch("dpgen2.op.run_caly_model_devi.calc_model_devi")
-    @patch("dpgen2.op.run_caly_model_devi.DP")
+    # @patch("dpgen2.op.run_caly_model_devi.RunCalyModelDevi.import_deepmd_package.calc_model_devi")
+    # @patch("dpgen2.op.run_caly_model_devi.RunCalyModelDevi.import_deepmd_package.DP")
+    @patch("deepmd.infer.calc_model_devi")
+    @patch("deepmd.infer.DeepPot")
     def test_02_success(self, mocked_run_1, mocked_run_2):
         def side_effect_1(*args, **kwargs):
             return "foo"
