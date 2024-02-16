@@ -4,6 +4,11 @@ import unittest
 from pathlib import (
     Path,
 )
+from unittest.mock import (
+    Mock,
+    call,
+    patch,
+)
 
 import numpy as np
 from ase import (
@@ -18,11 +23,6 @@ from dflow.python import (
     Artifact,
     OPIOSign,
     TransientError,
-)
-from mock import (
-    call,
-    mock,
-    patch,
 )
 
 from dpgen2.constants import (
@@ -44,6 +44,12 @@ from dpgen2.utils import (
 # )
 
 # isort: on
+try:
+    import deepmd
+
+    x = 0
+except:
+    x = 1
 
 
 class TestRunCalyModelDevi(unittest.TestCase):
@@ -105,6 +111,7 @@ ITEM: ATOMS id type x y z fx fy fz
 
     # @patch("dpgen2.op.run_caly_model_devi.RunCalyModelDevi.import_deepmd_package.calc_model_devi")
     # @patch("dpgen2.op.run_caly_model_devi.RunCalyModelDevi.import_deepmd_package.DP")
+    @unittest.skipIf(x == 1, "deepmd package not exists.")
     @patch("deepmd.infer.calc_model_devi")
     @patch("deepmd.infer.DeepPot")
     def test_02_success(self, mocked_run_1, mocked_run_2):
