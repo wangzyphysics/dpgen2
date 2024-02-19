@@ -25,6 +25,7 @@ from dpgen2.constants import (
     model_name_pattern,
 )
 from dpgen2.exploration.task import (
+    BaseExplorationTaskGroup,
     ExplorationTaskGroup,
 )
 from dpgen2.utils import (
@@ -306,7 +307,9 @@ class PrepCalyInput(OP):
     def get_input_sign(cls):
         return OPIOSign(
             {
-                "caly_task_grp": BigParameter(Path),  # calypso input params
+                "caly_task_grp": BigParameter(
+                    BaseExplorationTaskGroup
+                ),  # calypso input params
             }
         )
 
@@ -314,7 +317,6 @@ class PrepCalyInput(OP):
     def get_output_sign(cls):
         return OPIOSign(
             {
-                "iter_nums": BigParameter(List[int]),
                 "task_names": Parameter(List[str]),  # task dir names
                 "input_dat_files": Artifact(List[Path]),  # `input.dat`s
                 "caly_run_opt_files": Artifact(List[Path]),
@@ -340,7 +342,6 @@ class PrepCalyInput(OP):
         op : dict
             Output dict with components:
 
-            - `iter_nums`: (List[int])
             - `task_names`: (`List[str]`) The name of CALYPSO tasks. Will be used as the identities of the tasks. The names of different tasks are different.
             - `input_dat_files`: (`Artifact(List[Path])`) The parepared working paths of the task containing input files (`input.dat` and `calypso_run_opt.py`) needed to generate structures by CALYPSO and make structure optimization with DP model.
             - `caly_run_opt_files`: (`Artifact(List[Path])`)
@@ -362,11 +363,9 @@ class PrepCalyInput(OP):
             caly_check_opt_files.append(tname / calypso_check_opt_file)
             cc += 1
         task_names = [str(ii) for ii in task_paths]
-        iter_nums = [i for i in range(len(task_paths))]
 
         return OPIO(
             {
-                "iter_nums": iter_nums,
                 "task_names": task_names,
                 "input_dat_files": input_dat_files,
                 "caly_run_opt_files": caly_run_opt_files,

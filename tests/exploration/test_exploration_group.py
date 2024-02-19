@@ -32,6 +32,7 @@ from dpgen2.constants import (
 from dpgen2.exploration.task import (
     ExplorationStage,
     NPTTaskGroup,
+    caly_normalize,
     make_calypso_task_group_from_config,
 )
 
@@ -125,12 +126,12 @@ Ialgo = 2
 PsoRatio = 0.6
 ICode = 15
 NumberOfLbest = 4
-NumberOfLocalOptim = 4
+NumberOfLocalOptim = 3
 Command = sh submit.sh
 MaxTime = 9000
 GenType = 1
 PickUp = False
-PickStep = 1
+PickStep = 0
 Parallel = F
 Split = T
 SpeSpaceGroup = 2 230
@@ -577,13 +578,15 @@ class TestCPTStage(unittest.TestCase):
 
 class TestCalyGroup(unittest.TestCase):
     def setUp(self):
-        self.config = {
-            "name_of_atoms": ["Li", "La"],
-            "numb_of_atoms": [10, 10],
-            "numb_of_species": 2,
-            "atomic_number": [3, 4],
-            "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
-        }
+        self.config = caly_normalize(
+            {
+                "name_of_atoms": ["Li", "La"],
+                "numb_of_atoms": [10, 10],
+                "numb_of_species": 2,
+                "atomic_number": [3, 4],
+                "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
+            }
+        )
 
     def test_caly_task_group_make_task(self):
         tgroup = make_calypso_task_group_from_config(self.config)
@@ -600,22 +603,26 @@ class TestCalyGroup(unittest.TestCase):
 
 class TestCalyStage(unittest.TestCase):
     def setUp(self):
-        self.config_1 = {
-            "name_of_atoms": ["Li", "La"],
-            "numb_of_atoms": [10, 10],
-            "numb_of_species": 2,
-            "atomic_number": [3, 4],
-            "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
-        }
-        self.config_2 = {
-            "name_of_atoms": ["Li", "H"],
-            "numb_of_atoms": [10, 10],
-            "numb_of_species": 2,
-            "atomic_number": [3, 1],
-            "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
-            "pressure": 100,
-            "fmax": 1,
-        }
+        self.config_1 = caly_normalize(
+            {
+                "name_of_atoms": ["Li", "La"],
+                "numb_of_atoms": [10, 10],
+                "numb_of_species": 2,
+                "atomic_number": [3, 4],
+                "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
+            }
+        )
+        self.config_2 = caly_normalize(
+            {
+                "name_of_atoms": ["Li", "H"],
+                "numb_of_atoms": [10, 10],
+                "numb_of_species": 2,
+                "atomic_number": [3, 1],
+                "distance_of_ions": [[1.0, 1.0], [1.0, 1.0]],
+                "pressure": 100,
+                "fmax": 1,
+            }
+        )
 
     def test(self):
         tgroup_1 = make_calypso_task_group_from_config(self.config_1)

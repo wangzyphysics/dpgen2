@@ -79,7 +79,7 @@ from dpgen2.exploration.task import (
     NPTTaskGroup,
     make_calypso_task_group_from_config,
     make_lmp_task_group_from_config,
-    normalize_task_group_config,
+    normalize_lmp_task_group_config,
 )
 from dpgen2.flow import (
     ConcurrentLearning,
@@ -253,6 +253,10 @@ def make_calypso_naive_exploration_scheduler(config):
         fp_task_max,
     )
 
+    from dpgen2.exploration.task import (
+        caly_normalize,
+    )
+
     for job_ in model_devi_jobs:
         if not isinstance(job_, list):
             job = [job_]
@@ -261,9 +265,9 @@ def make_calypso_naive_exploration_scheduler(config):
         # stage
         stage = ExplorationStage()
         for jj in job:
-            # jconf = normalize_task_group_config(jj)
+            jconf = caly_normalize(jj)
             # make task group
-            tgroup = make_calypso_task_group_from_config(jj)
+            tgroup = make_calypso_task_group_from_config(jconf)
             # add the list to task group
             tasks = tgroup.make_task()
             stage.add_task_group(tasks)

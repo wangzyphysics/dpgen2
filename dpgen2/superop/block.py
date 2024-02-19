@@ -115,14 +115,6 @@ class ConcurrentLearningBlock(Steps):
             "init_data": InputArtifact(),
             "iter_data": InputArtifact(),
         }
-        # if exploration_style == "lmp":
-        #     self._input_parameters.update(
-        #         {
-        #             "lmp_task_grp": InputParameter(),
-        #         }
-        #     )
-        # elif exploration_style == "calypso":
-        #     pass
         self._output_parameters = {
             "exploration_report": OutputParameter(),
         }

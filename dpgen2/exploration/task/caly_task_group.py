@@ -50,6 +50,9 @@ class CalyTaskGroup(ExplorationTaskGroup):
         parallel: bool = False,
         split: bool = True,
         spec_space_group: List[int] = [2, 230],
+        vsc: bool = True,
+        ctrl_range: List[List[int]] = [[1, 10]],
+        max_numb_atoms: int = 100,
     ):
         """
         Set calypso parameters
@@ -79,6 +82,9 @@ class CalyTaskGroup(ExplorationTaskGroup):
         self.parallel = parallel
         self.split = split
         self.spec_space_group = spec_space_group
+        self.vsc = vsc
+        self.ctrl_range = ctrl_range
+        self.max_numb_atoms = max_numb_atoms
 
         self.caly_set = True
 
@@ -125,6 +131,9 @@ class CalyTaskGroup(ExplorationTaskGroup):
             self.parallel,
             self.split,
             self.spec_space_group,
+            self.vsc,
+            self.ctrl_range,
+            self.max_numb_atoms,
         )
         task = ExplorationTask()
         task.add_file(calypso_input_file, input_file_str)

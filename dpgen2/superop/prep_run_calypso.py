@@ -165,7 +165,6 @@ def _prep_run_caly(
             **prep_template_config,
         ),
         parameters={
-            # "caly_inputs": caly_config["caly_inputs"],
             "caly_task_grp": prep_run_caly_steps.inputs.parameters["caly_task_grp"],
         },
         artifacts={},
@@ -193,7 +192,6 @@ def _prep_run_caly(
                 "caly_run_opt_file",
                 "caly_check_opt_file",
             ],
-            # output_parameter=["task_name"],
             output_artifact=["traj_results"],
             **template_slice_config,
         ),
