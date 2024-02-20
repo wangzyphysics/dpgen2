@@ -77,6 +77,7 @@ from dpgen2.exploration.task import (
     ExplorationTask,
     LmpTemplateTaskGroup,
     NPTTaskGroup,
+    caly_normalize,
     make_calypso_task_group_from_config,
     make_lmp_task_group_from_config,
     normalize_lmp_task_group_config,
@@ -187,7 +188,7 @@ def make_concurrent_learning_op(
 
     if fp_style in fp_styles.keys():
         prep_run_fp_op = PrepRunFp(
-            f"prep-run-fp",
+            "prep-run-fp",
             fp_styles[fp_style]["prep"],
             fp_styles[fp_style]["run"],
             prep_config=prep_fp_config,
@@ -200,7 +201,6 @@ def make_concurrent_learning_op(
     # ConcurrentLearningBlock
     block_cl_op = ConcurrentLearningBlock(
         "concurrent-learning-block",
-        explore_style,
         prep_run_train_op,
         prep_run_explore_op,
         SelectConfs,
@@ -213,7 +213,6 @@ def make_concurrent_learning_op(
     # dpgen
     dpgen_op = ConcurrentLearning(
         "concurrent-learning",
-        explore_style,
         block_cl_op,
         upload_python_packages=upload_python_packages,
         step_config=cl_step_config,
@@ -251,10 +250,6 @@ def make_calypso_naive_exploration_scheduler(config):
         render,
         report,
         fp_task_max,
-    )
-
-    from dpgen2.exploration.task import (
-        caly_normalize,
     )
 
     for job_ in model_devi_jobs:
@@ -321,7 +316,7 @@ def make_lmp_naive_exploration_scheduler(config):
         # stage
         stage = ExplorationStage()
         for jj in job:
-            jconf = normalize_task_group_config(jj)
+            jconf = normalize_lmp_task_group_config(jj)
             n_sample = jconf.pop("n_sample")
             ##  ignore the expansion of sys_idx
             # get all file names of md initial configurations

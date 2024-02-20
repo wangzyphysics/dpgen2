@@ -45,12 +45,26 @@ from dpgen2.constants import (
 )
 
 try:
-    from .context import (
+    from context import (
         dpgen2,
     )
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
+from context import (
+    default_host,
+    default_image,
+    skip_ut_with_dflow,
+    skip_ut_with_dflow_reason,
+    upload_python_packages,
+)
+from mocked_ops import (
+    MockedCollRunCaly,
+    MockedPrepRunDPOptim,
+    MockedRunCalyModelDevi,
+    mocked_numb_models,
+)
+
 from dpgen2.exploration.task import (
     BaseExplorationTaskGroup,
     ExplorationTask,
@@ -68,20 +82,6 @@ from dpgen2.superop.prep_run_calypso import (
     PrepRunCaly,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
-
-from .context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from .mocked_ops import (
-    MockedCollRunCaly,
-    MockedPrepRunDPOptim,
-    MockedRunCalyModelDevi,
-    mocked_numb_models,
-)
 
 default_config = normalize_step_dict(
     {
@@ -120,14 +120,14 @@ class TestCalyEvoStep(unittest.TestCase):
         self.models = upload_artifact(self.model_list)
 
         self.block_id = "id123id"
-        self.caly_task_grp = make_task_group_list(njobs=2)
+        self.expl_task_grp = make_task_group_list(njobs=2)
         self.type_map = ["Mg", "Al"]
 
     def tearDown(self):
         shutil.rmtree(self.work_dir, ignore_errors=True)
         for i in Path().glob("prep-run-caly-step*"):
             shutil.rmtree(i, ignore_errors=True)
-        shutil.rmtree("upload", ignore_errors=True)
+        # shutil.rmtree("upload", ignore_errors=True)
 
     def test(self):
         caly_evo_step_op = CalyEvoStep(
@@ -142,22 +142,18 @@ class TestCalyEvoStep(unittest.TestCase):
             "prep-run-calypso",
             PrepCalyInput,
             caly_evo_step_op,
-            # RunCalyModelDevi,
             MockedRunCalyModelDevi,
             prep_config=default_config,
             run_config=default_config,
             upload_python_packages=upload_python_packages,
         )
-        #     "task_names": OutputParameter(),
-        #     "trajs": OutputArtifact(),
-        #     "model_devis": OutputArtifact(),
         prep_run_caly_step = Step(
             "prep-run-caly-step",
             template=prep_run_caly_op,
             parameters={
                 "block_id": self.block_id,
-                "caly_task_grp": self.caly_task_grp,
-                "expl_config": self.expl_config,
+                "expl_task_grp": self.expl_task_grp,
+                "explore_config": self.expl_config,
                 "type_map": self.type_map,
             },
             artifacts={

@@ -45,12 +45,26 @@ from dpgen2.constants import (
 )
 
 try:
-    from .context import (
+    from context import (
         dpgen2,
     )
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
+from context import (
+    default_host,
+    default_image,
+    skip_ut_with_dflow,
+    skip_ut_with_dflow_reason,
+    upload_python_packages,
+)
+from mocked_ops import (
+    MockedCollRunCaly,
+    MockedPrepRunDPOptim,
+    MockedRunLmp,
+    mocked_numb_models,
+)
+
 from dpgen2.constants import (
     lmp_conf_name,
     lmp_input_name,
@@ -80,20 +94,6 @@ from dpgen2.superop.caly_evo_step import (
     CalyEvoStep,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
-
-from .context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from .mocked_ops import (
-    MockedCollRunCaly,
-    MockedPrepRunDPOptim,
-    MockedRunLmp,
-    mocked_numb_models,
-)
 
 default_config = normalize_step_dict(
     {
@@ -297,9 +297,9 @@ class TestCalyEvoStep(unittest.TestCase):
             shutil.rmtree(i, ignore_errors=True)
         for i in Path().glob("caly_task*"):
             shutil.rmtree(i, ignore_errors=True)
-        shutil.rmtree("upload", ignore_errors=True)
+        # shutil.rmtree("upload", ignore_errors=True)
 
-    @unittest.skip("temp skit")
+    @unittest.skip("only need to run test_01")
     def test_00(self):
         steps = CalyEvoStep(
             "caly-evo-run",

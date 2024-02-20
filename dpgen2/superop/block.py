@@ -85,7 +85,6 @@ class ConcurrentLearningBlock(Steps):
     def __init__(
         self,
         name: str,
-        exploration_style,
         prep_run_dp_train_op: PrepRunDPTrain,
         prep_run_explore_op: Union[PrepRunLmp, PrepRunCaly],
         select_confs_op: Type[OP],
@@ -95,7 +94,6 @@ class ConcurrentLearningBlock(Steps):
         collect_data_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
-        self.explore_style = exploration_style
         self._input_parameters = {
             "block_id": InputParameter(),
             "type_map": InputParameter(),
@@ -232,40 +230,22 @@ def _block_cl(
     )
     block_steps.add(prep_run_dp_train)
 
-    if block_steps.explore_style == "lmp":
-        prep_run_explore = Step(
-            name=name + "-prep-run-lmp",
-            template=prep_run_explore_op,
-            parameters={
-                "block_id": block_steps.inputs.parameters["block_id"],
-                "lmp_config": block_steps.inputs.parameters["explore_config"],
-                "lmp_task_grp": block_steps.inputs.parameters["expl_task_grp"],
-            },
-            artifacts={
-                "models": prep_run_dp_train.outputs.artifacts["models"],
-            },
-            key="--".join(
-                ["%s" % block_steps.inputs.parameters["block_id"], "prep-run-lmp"]
-            ),
-        )
-    elif block_steps.explore_style == "calypso":
-        prep_run_explore = Step(
-            name=name + "-prep-run-calypso",
-            template=prep_run_explore_op,
-            parameters={
-                "block_id": block_steps.inputs.parameters["block_id"],
-                "caly_task_grp": block_steps.inputs.parameters["expl_task_grp"],
-                "expl_config": block_steps.inputs.parameters["explore_config"],
-                "type_map": block_steps.inputs.parameters["type_map"],
-            },
-            artifacts={
-                "models": prep_run_dp_train.outputs.artifacts["models"],
-            },
-            key="--".join(
-                ["%s" % block_steps.inputs.parameters["block_id"], "prep-run-calypso"]
-            ),
-        )
-
+    prep_run_explore = Step(
+        name=name + "-prep-run-explore",
+        template=prep_run_explore_op,
+        parameters={
+            "block_id": block_steps.inputs.parameters["block_id"],
+            "expl_task_grp": block_steps.inputs.parameters["expl_task_grp"],
+            "explore_config": block_steps.inputs.parameters["explore_config"],
+            "type_map": block_steps.inputs.parameters["type_map"],
+        },
+        artifacts={
+            "models": prep_run_dp_train.outputs.artifacts["models"],
+        },
+        key="--".join(
+            ["%s" % block_steps.inputs.parameters["block_id"], "prep-run-explore"]
+        ),
+    )
     block_steps.add(prep_run_explore)
 
     select_confs = Step(

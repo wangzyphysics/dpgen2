@@ -158,12 +158,10 @@ class ConcurrentLearningLoop(Steps):
     def __init__(
         self,
         name: str,
-        explore_style,
         block_op: ConcurrentLearningBlock,
         step_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
-        self.explore_style = explore_style
         self._input_parameters = {
             "block_id": InputParameter(),
             "type_map": InputParameter(),
@@ -182,15 +180,6 @@ class ConcurrentLearningLoop(Steps):
             "init_data": InputArtifact(),
             "iter_data": InputArtifact(),
         }
-        # if explore_style == "lmp":
-        #     self._input_parameters.update(
-        #         {
-        #             "lmp_task_grp": InputParameter(),
-        #         }
-        #     )
-        # elif explore_style == "calypso":
-        #     pass
-
         self._output_parameters = {
             "exploration_scheduler": OutputParameter(),
         }
@@ -253,15 +242,12 @@ class ConcurrentLearning(Steps):
     def __init__(
         self,
         name: str,
-        explore_style,
         block_op: ConcurrentLearningBlock,
         step_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
     ):
-        self.explore_style = explore_style
         self.loop = ConcurrentLearningLoop(
             name + "-loop",
-            explore_style,
             block_op,
             step_config=step_config,
             upload_python_packages=upload_python_packages,
@@ -373,15 +359,6 @@ def _loop(
         "explore_config": steps.inputs.parameters["explore_config"],
         "expl_task_grp": steps.inputs.parameters["expl_task_grp"],
     }
-    # if steps.explore_style == "lmp":
-    #     block_common_parameters.update(
-    #         {
-    #             "lmp_task_grp": steps.inputs.parameters["lmp_task_grp"],
-    #         }
-    #     )
-    # elif steps.explore_style == "calypso":
-    #     pass
-
     block_step = Step(
         name=name + "-block",
         template=block_op,
@@ -452,16 +429,6 @@ def _loop(
         "optional_parameter": steps.inputs.parameters["optional_parameter"],
         "expl_task_grp": scheduler_step.outputs.parameters["expl_task_grp"],
     }
-
-    # if steps.explore_style == "lmp":
-    #     next_common_parameters.update(
-    #         {
-    #             "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
-    #         }
-    #     )
-    # elif steps.explore_style == "calypso":
-    #     pass
-
     next_step = Step(
         name=name + "-next",
         template=steps,
@@ -566,14 +533,6 @@ def _dpgen(
         "optional_parameter": steps.inputs.parameters["optional_parameter"],
         "expl_task_grp": scheduler_step.outputs.parameters["expl_task_grp"],
     }
-    # if steps.explore_style == "lmp":
-    #     common_parameters.update(
-    #         {
-    #             "lmp_task_grp": scheduler_step.outputs.parameters["lmp_task_grp"],
-    #         }
-    #     )
-    # elif steps.explore_style == "calypso":
-    #     pass
     loop_step = Step(
         name=name + "-loop",
         template=loop_op,
