@@ -1019,9 +1019,9 @@ class MockedCollRunCaly(CollRunCaly):
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
         finished = "true" if int(cnt_num) == int(max_step) else "false"
-        print(f"-------------cnt_num: {cnt_num}, -------max_step---:{max_step}")
-        print(f"-------------step_num: {step_num}")
-        print(f"-------------finished: {finished}")
+        # print(f"-------------cnt_num: {cnt_num}, -------max_step---:{max_step}")
+        # print(f"-------------step_num: {step_num}")
+        # print(f"-------------finished: {finished}")
 
         os.chdir(cwd)
         ret_dict = {
@@ -1046,7 +1046,7 @@ class MockedPrepRunDPOptim(PrepRunDPOptim):
         finished = ip["finished"]
         work_dir = Path(ip["task_name"])
         cnt_num = ip["cnt_num"]
-        print(f"--------=---------task_name: {work_dir}")
+        # print(f"--------=---------task_name: {work_dir}")
         work_dir.mkdir(parents=True, exist_ok=True)
 
         poscar_dir = ip["poscar_dir"]
