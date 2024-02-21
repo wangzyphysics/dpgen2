@@ -124,8 +124,8 @@ class RunCalyModelDevi(OP):
                         f.write(dump_str)
                         pbc = np.all(atoms.get_pbc())
                         coord = atoms.get_positions().reshape(1, -1)
-                        cell = atoms.get_cell().reshape(1, -1) if pbc else None
-                        atype = [type_map.index(atom.symbol) for atom in atoms]
+                        cell = atoms.get_cell().array.reshape(1, -1) if pbc else None
+                        atype = [type_map.index(atom.symbol) for atom in atoms]  # type: ignore
                         devi = calc_model_devi(coord, cell, atype, graphs)[0]
                         devi[0] = tcount
                         Devis.append(devi)
@@ -189,21 +189,21 @@ def atoms2lmpdump(atoms, struc_idx, type_map):
     dump_str += "%20.10f %20.10f %20.10f\n" % (zlo_bound, zhi_bound, yz)
     dump_str += "ITEM: ATOMS id type x y z fx fy fz\n"
     for idx, atom in enumerate(new_atoms):
-        type_id = type_map.index(atom.symbol) + 1
+        type_id = type_map.index(atom.symbol) + 1  # type: ignore
         dump_str += "%5d %5d" % (idx + 1, type_id)
         dump_str += "%20.10f %20.10f %20.10f" % (
-            atom.position[0],
-            atom.position[1],
-            atom.position[2],
+            atom.position[0],  # type: ignore
+            atom.position[1],  # type: ignore
+            atom.position[2],  # type: ignore
         )
         dump_str += "%20.10f %20.10f %20.10f\n" % (0, 0, 0)
     # dump_str = dump_str.strip("\n")
     return dump_str
 
 
-def parse_traj(traj_file) -> Union[None, List[Atoms]]:
+def parse_traj(traj_file):
     # optimization will at least return one structures in traj file
-    trajs = read(traj_file, index=":", format="traj")
+    trajs: List[Atoms] = read(traj_file, index=":", format="traj")  # type: ignore
 
     numb_traj = len(trajs)
     assert numb_traj >= 1, "traj file is broken."
@@ -216,6 +216,7 @@ def parse_traj(traj_file) -> Union[None, List[Atoms]]:
     dis_mtx[row, col] = np.nan
     is_reasonable = np.nanmin(dis_mtx) > 0.6
 
+    selected_traj: Union[List[Atoms], None] = None
     if is_reasonable:
         if len(trajs) >= 20:
             selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
@@ -236,7 +237,7 @@ def parse_traj(traj_file) -> Union[None, List[Atoms]]:
     return selected_traj
 
 
-def write_model_devi_out(devi: np.ndarray, fname: str, header: str = ""):
+def write_model_devi_out(devi: np.ndarray, fname: Union[str, Path], header: str = ""):
     assert devi.shape[1] == 7
     header = "%s\n%10s" % (header, "step")
     for item in "vf":

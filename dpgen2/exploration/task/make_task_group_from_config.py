@@ -555,4 +555,4 @@ def make_lmp_task_group_from_config(
 
 
 if __name__ == "__main__":
-    print(normalize({"type": "lmp-md"}))
+    print(lmp_normalize({"type": "lmp-md"}))

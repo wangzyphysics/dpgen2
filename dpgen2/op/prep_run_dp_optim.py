@@ -169,7 +169,7 @@ class PrepRunDPOptim(OP):
                     target = traj_results_dir.joinpath(str(cnt_num) + "." + traj.name)
                     shutil.copyfile(traj, target)
 
-            elif finished != "false":
+            else:
                 optim_results_dir = Path("optim_results_dir")
                 optim_results_dir.mkdir(parents=True, exist_ok=True)
                 traj_results_dir = Path("traj_results")

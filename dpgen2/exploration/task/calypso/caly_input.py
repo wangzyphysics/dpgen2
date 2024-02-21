@@ -242,7 +242,7 @@ def make_calypso_input(
     name_of_atoms: List[str],
     atomic_number: List[int],
     numb_of_atoms: List[int],
-    distance_of_ions: List[List[float]],
+    distance_of_ions,
     pop_size: int = 30,
     max_step: int = 5,
     system_name: str = "CALYPSO",

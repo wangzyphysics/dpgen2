@@ -60,7 +60,7 @@ class PrepRunLmp(Steps):
             "block_id": InputParameter(type=str, value=""),
             "explore_config": InputParameter(),
             "expl_task_grp": InputParameter(),
-            "type_map": InputParameter(value=""),
+            "type_map": InputParameter(value=[]),
         }
         self._input_artifacts = {
             "models": InputArtifact(),
