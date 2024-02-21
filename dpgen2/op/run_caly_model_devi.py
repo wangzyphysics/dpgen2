@@ -7,16 +7,16 @@ from typing import (
 )
 
 import numpy as np
-from ase import (
+from ase import (  # type: ignore
     Atoms,
 )
-from ase.build import (
+from ase.build import (  # type: ignore
     make_supercell,
 )
-from ase.geometry import (
+from ase.geometry import (  # type: ignore
     cellpar_to_cell,
 )
-from ase.io import (
+from ase.io import (  # type: ignore
     read,
     write,
 )
@@ -89,7 +89,7 @@ class RunCalyModelDevi(OP):
 
         """
 
-        from deepmd.infer import (
+        from deepmd.infer import (  # type: ignore
             DeepPot,
             calc_model_devi,
         )
