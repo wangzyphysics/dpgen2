@@ -247,7 +247,7 @@ def get_value_from_inputdat(filename):
                 max_step = int(line.strip().split("#")[0].split("=")[1])
                 continue
             if "VSC" in line:
-                vsc_str = line.strip().split("#")[0].split("=")[1].lower()
+                vsc_str = line.strip().split("#")[0].split("=")[1].lower().strip()
                 if vsc_str.startswith("t"):
                     vsc = True
         return max_step, vsc

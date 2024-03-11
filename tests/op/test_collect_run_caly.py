@@ -44,7 +44,7 @@ class TestCollRunCaly(unittest.TestCase):
         self.input_file_path = Path("input_file")
         self.input_file_path.mkdir(parents=True, exist_ok=True)
         self.input_file = self.input_file_path.joinpath(calypso_input_file)
-        self.input_file.write_text("input.dat\nMaxStep=3\nVSC=T\n")
+        self.input_file.write_text("input.dat\nMaxStep=3\nVSC= T\n")
 
         self.step_file = self.input_file_path.joinpath("step")
         self.step_file.write_text("3")
