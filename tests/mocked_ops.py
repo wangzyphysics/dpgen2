@@ -1157,7 +1157,7 @@ ITEM: ATOMS id type x y z fx fy fz
         return OPIO(
             {
                 "task_name": str(work_dir),
-                "traj": work_dir / dump_file_name,
-                "model_devi": work_dir / model_devi_file_name,
+                "traj": [work_dir / dump_file_name],
+                "model_devi": [work_dir / model_devi_file_name],
             }
         )
