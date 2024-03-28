@@ -97,18 +97,19 @@ class CalyEvoStep(Steps):
 
         self.collect_run_calypso_keys = [
             "%s--collect-run-calypso-%s-%s" % (self.inputs.parameters["block_id"], i, j)
-            for i in range(50)
-            for j in range(50)
+            for i in range(20)
+            for j in range(20)
         ]
         self.prep_dp_optim_keys = [
             "%s--prep-dp-optim-%s-%s" % (self.inputs.parameters["block_id"], i, j)
-            for i in range(50)
-            for j in range(50)
+            for i in range(20)
+            for j in range(20)
         ]
         self.run_dp_optim_keys = [
-            "%s--run-dp-optim-%s-%s" % (self.inputs.parameters["block_id"], i, j)
-            for i in range(50)
-            for j in range(50)
+            "%s--run-dp-optim-%s-%s-%s" % (self.inputs.parameters["block_id"], i, j, k)
+            for i in range(20)
+            for j in range(20)
+            for k in range(50)
         ]
         self._keys = (
             self.collect_run_calypso_keys
@@ -243,7 +244,7 @@ def _caly_evo_step(
             run_dp_optim_op,
             slices=Slices(
                 input_parameter=["task_name"],
-                input_artifact=["task_path"],
+                input_artifact=["task_dir"],
                 output_artifact=["traj_results", "optim_results_dir"],
             ),
             python_packages=upload_python_packages,
@@ -264,7 +265,7 @@ def _caly_evo_step(
             caly_evo_step_steps.inputs.parameters["iter_num"],
             caly_evo_step_steps.inputs.parameters["cnt_num"],
         ),
-        executor=prep_executor,  # cpu is enough to run calypso.x, default step config is c2m4
+        executor=run_executor,
         **run_config,
     )
     caly_evo_step_steps.add(run_dp_optim)

@@ -97,7 +97,10 @@ class RunDPOptim(OP):
         cnt_num = ip["cnt_num"]
 
         task_path = ip["task_dir"]
-        input_files = [ii.resolve() for ii in Path(task_path).iterdir()]
+        if task_path is not None:
+            input_files = [ii.resolve() for ii in Path(task_path).iterdir()]
+        else:
+            input_files = []
 
         config = ip["config"] if ip["config"] is not None else {}
         command = config.get(
@@ -161,7 +164,5 @@ class RunDPOptim(OP):
                 "task_name": str(work_dir),
                 "optim_results_dir": work_dir / optim_results_dir,
                 "traj_results": work_dir / traj_results_dir,
-                # "caly_run_opt_file": work_dir / calypso_run_opt_file,
-                # "caly_check_opt_file": work_dir / calypso_check_opt_file,
             }
         )

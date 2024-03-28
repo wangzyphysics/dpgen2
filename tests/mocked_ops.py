@@ -972,6 +972,7 @@ class MockedCollRunCaly(CollRunCaly):
 
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
+        # print("==============----------work_dir in collruncaly:", work_dir)
         work_dir.mkdir(exist_ok=True, parents=True)
 
         qhull_input = (
@@ -1121,20 +1122,38 @@ class MockedRunDPOptim(RunDPOptim):
         finished = ip["finished"]
         work_dir = Path(ip["task_name"])
         cnt_num = ip["cnt_num"]
-        # print(f"--------=---------task_name: {work_dir}")
+        # print(f"----in RunDpOptim----task_name: {work_dir}")
+        # print(f"----cwd in RunDPOptim------cwd: {cwd}")
         work_dir.mkdir(parents=True, exist_ok=True)
 
         config = ip["config"] if ip["config"] is not None else {}
         command = config.get("run_opt_command", "python -u calypso_run_opt.py")
 
+        task_path = ip["task_dir"]
+        # print(f"----in RunDpOptim----task_dir: {task_path}")
+        if task_path is not None:
+            input_files = [ii.resolve() for ii in Path(task_path).iterdir()]
+        else:
+            pass
+
         os.chdir(work_dir)
 
-        for i in range(1, 6):
-            Path().joinpath(f"CONTCAR_{str(i)}").write_text(f"CONTCAR_{str(i)}")
-            Path().joinpath(f"OUTCAR_{str(i)}").write_text(f"OUTCAR_{str(i)}")
-            Path().joinpath(f"{str(i)}.traj").write_text(f"{str(i)}.traj")
-
         if finished == "false":
+            for ii in input_files:
+                iname = ii.name
+                Path(iname).symlink_to(ii)
+
+            poscar_list = sorted(Path().rglob("POSCAR_*"))
+            # print(f"-----in RunDpOptim----poscar_list: {poscar_list}")
+            cnt = 0
+            for poscar in poscar_list:
+                cnt += 1
+                poscar_name = poscar.name
+                num = poscar_name.strip("POSCAR_")
+                Path(poscar_name.replace("POSCAR", "CONTCAR")).write_text("")
+                Path(poscar_name.replace("POSCAR", "OUTCAR")).write_text("")
+                Path(f"{num}.traj").write_text("")
+
             optim_results_dir = Path("optim_results_dir")
             optim_results_dir.mkdir(parents=True, exist_ok=True)
             for poscar in Path().glob("POSCAR_*"):
@@ -1165,8 +1184,6 @@ class MockedRunDPOptim(RunDPOptim):
                 "task_name": str(work_dir),
                 "optim_results_dir": work_dir / optim_results_dir,
                 "traj_results": work_dir / traj_results_dir,
-                "caly_run_opt_file": work_dir / calypso_run_opt_file,
-                "caly_check_opt_file": work_dir / calypso_check_opt_file,
             }
         )
 
