@@ -38,6 +38,7 @@ from dpgen2.constants import (
     model_name_match_pattern,
     model_name_pattern,
     plm_output_name,
+    pytorch_model_name_pattern,
 )
 from dpgen2.utils import (
     BinaryFileInput,
@@ -143,30 +144,39 @@ class RunLmp(OP):
             model_names = []
             for idx, mm in enumerate(model_files):
                 ext = os.path.splitext(mm)[-1]
-                mname = model_name_pattern % (idx) + ext
-                model_names.append(mname)
                 if ext == ".pb":
+                    mname = model_name_pattern % (idx)
                     Path(mname).symlink_to(mm)
                 elif ext == ".pt":
                     # freeze model
+                    mname = pytorch_model_name_pattern % (idx)
                     freeze_args = "-o %s" % mname
                     if config.get("head") is not None:
                         freeze_args += " --head %s" % config["head"]
                     freeze_cmd = "dp --pt freeze -c %s %s" % (mm, freeze_args)
                     ret, out, err = run_command(freeze_cmd, shell=True)
                     if ret != 0:
-                        logging.error("".join((
-                            "freeze failed\n",
-                            "command was",
-                            freeze_cmd,
-                            "out msg",
-                            out,
-                            "\n",
-                            "err msg",
-                            err,
-                            "\n",
-                        )))
+                        logging.error(
+                            "".join(
+                                (
+                                    "freeze failed\n",
+                                    "command was",
+                                    freeze_cmd,
+                                    "out msg",
+                                    out,
+                                    "\n",
+                                    "err msg",
+                                    err,
+                                    "\n",
+                                )
+                            )
+                        )
                         raise TransientError("freeze failed")
+                else:
+                    raise RuntimeError(
+                        "Model file with extension '%s' is not supported" % ext
+                    )
+                model_names.append(mname)
 
             if shuffle_models:
                 random.shuffle(model_names)
@@ -249,7 +259,11 @@ def set_models(lmp_input_name: str, model_names: List[str]):
     with open(lmp_input_name, encoding="utf8") as f:
         lmp_input_lines = f.readlines()
 
-    idx = find_only_one_key(lmp_input_lines, ["pair_style", "deepmd"])
+    idx = find_only_one_key(
+        lmp_input_lines, ["pair_style", "deepmd"], raise_not_found=False
+    )
+    if idx is None:
+        return
     new_line_split = lmp_input_lines[idx].split()
     match_first = -1
     match_last = -1
@@ -275,13 +289,13 @@ def set_models(lmp_input_name: str, model_names: List[str]):
                 f"in line {lmp_input_lines[idx]}"
             )
     new_line_split[match_first:match_last] = model_names
-    lmp_input_lines[idx] = " ".join(new_line_split)
+    lmp_input_lines[idx] = " ".join(new_line_split) + "\n"
 
     with open(lmp_input_name, "w", encoding="utf8") as f:
         f.write("".join(lmp_input_lines))
 
 
-def find_only_one_key(lmp_lines, key):
+def find_only_one_key(lmp_lines, key, raise_not_found=True):
     found = []
     for idx in range(len(lmp_lines)):
         words = lmp_lines[idx].split()
@@ -291,5 +305,8 @@ def find_only_one_key(lmp_lines, key):
     if len(found) > 1:
         raise RuntimeError("found %d keywords %s" % (len(found), key))
     if len(found) == 0:
-        raise RuntimeError("failed to find keyword %s" % (key))
+        if raise_not_found:
+            raise RuntimeError("failed to find keyword %s" % (key))
+        else:
+            return None
     return found[0]

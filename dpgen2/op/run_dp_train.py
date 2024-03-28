@@ -124,10 +124,11 @@ class RunDPTrain(OP):
         finetune_mode = ip["optional_parameter"]["finetune_mode"]
         config = ip["config"] if ip["config"] is not None else {}
         impl = ip["config"].get("impl", "tensorflow")
-        if impl == "tensorflow":
-            dp_command = ["dp"]
-        elif impl == "pytorch":
+        assert impl in ["tensorflow", "pytorch"]
+        if impl == "pytorch":
             dp_command = ["dp", "--pt"]
+        else:
+            dp_command = ["dp"]
         finetune_args = config.get("finetune_args", "")
         config = RunDPTrain.normalize_config(config)
         task_name = ip["task_name"]
@@ -167,7 +168,13 @@ class RunDPTrain(OP):
 
         # update the input dict
         train_dict = RunDPTrain.write_data_to_input_script(
-            train_dict, config, init_data, iter_data_exp, auto_prob_str, major_version, valid_data
+            train_dict,
+            config,
+            init_data,
+            iter_data_exp,
+            auto_prob_str,
+            major_version,
+            valid_data,
         )
         train_dict = RunDPTrain.write_other_to_input_script(
             train_dict, config, do_init_model, major_version
@@ -198,32 +205,53 @@ class RunDPTrain(OP):
 
             # train model
             if impl == "tensorflow" and os.path.isfile("checkpoint"):
-                command = dp_command + ["train", "--restart", "model.ckpt", train_script_name]
+                command = dp_command + [
+                    "train",
+                    "--restart",
+                    "model.ckpt",
+                    train_script_name,
+                ]
             elif impl == "pytorch" and len(glob.glob("model.ckpt-[0-9]*.pt")) > 0:
-                checkpoint = "model.ckpt-%s.pt" % max([int(f[11:-3]) for f in glob.glob("model.ckpt-[0-9]*.pt")])
-                command = dp_command + ["train", "--restart", checkpoint, train_script_name]
-            elif (do_init_model or finetune_mode == "train-init") and not config["init_model_with_finetune"]:
-                if impl == "tensorflow":
-                    command = dp_command + [
-                        "train",
-                        "--init-frz-model",
-                        str(init_model),
-                        train_script_name,
-                    ]
-                elif impl == "pytorch":
+                checkpoint = "model.ckpt-%s.pt" % max(
+                    [int(f[11:-3]) for f in glob.glob("model.ckpt-[0-9]*.pt")]
+                )
+                command = dp_command + [
+                    "train",
+                    "--restart",
+                    checkpoint,
+                    train_script_name,
+                ]
+            elif (do_init_model or finetune_mode == "train-init") and not config[
+                "init_model_with_finetune"
+            ]:
+                if impl == "pytorch":
                     command = dp_command + [
                         "train",
                         "--init-model",
                         str(init_model),
                         train_script_name,
                     ]
-            elif finetune_mode == "finetune" or ((do_init_model or finetune_mode == "train-init") and config["init_model_with_finetune"]):
-                command = dp_command + [
-                    "train",
-                    train_script_name,
-                    "--finetune",
-                    str(init_model),
-                ] + finetune_args.split()
+                else:
+                    command = dp_command + [
+                        "train",
+                        "--init-frz-model",
+                        str(init_model),
+                        train_script_name,
+                    ]
+            elif finetune_mode == "finetune" or (
+                (do_init_model or finetune_mode == "train-init")
+                and config["init_model_with_finetune"]
+            ):
+                command = (
+                    dp_command
+                    + [
+                        "train",
+                        train_script_name,
+                        "--finetune",
+                        str(init_model),
+                    ]
+                    + finetune_args.split()
+                )
             else:
                 command = dp_command + ["train", train_script_name]
             ret, out, err = run_command(command)
@@ -252,7 +280,9 @@ class RunDPTrain(OP):
                 shutil.copy2("input_v2_compat.json", train_script_name)
 
             # freeze model
-            if impl == "tensorflow":
+            if impl == "pytorch":
+                model_file = "model.ckpt.pt"
+            else:
                 ret, out, err = run_command(["dp", "freeze", "-o", "frozen_model.pb"])
                 if ret != 0:
                     clean_before_quit()
@@ -271,8 +301,6 @@ class RunDPTrain(OP):
                     )
                     raise FatalError("dp freeze failed")
                 model_file = "frozen_model.pb"
-            elif impl == "pytorch":
-                model_file = "model.ckpt.pt"
             fplog.write("#=================== freeze std out ===================\n")
             fplog.write(out)
             fplog.write("#=================== freeze std err ===================\n")
@@ -306,10 +334,11 @@ class RunDPTrain(OP):
             for k, v in odict["training"]["data_dict"].items():
                 v["training_data"]["systems"] = []
                 if k in multi_init_data_idx:
-                    v["training_data"]["systems"] += [str(init_data[ii]) for ii in multi_init_data_idx[k]]
+                    v["training_data"]["systems"] += [
+                        str(init_data[ii]) for ii in multi_init_data_idx[k]
+                    ]
                 if k == head:
                     v["training_data"]["systems"] += [str(ii) for ii in iter_data]
-                v.pop("validation_data", None)
             return odict
         data_list = [str(ii) for ii in init_data] + [str(ii) for ii in iter_data]
         if major_version == "1":
@@ -349,9 +378,16 @@ class RunDPTrain(OP):
         odict["training"]["disp_file"] = "lcurve.out"
         if do_init_model:
             odict["learning_rate"]["start_lr"] = config["init_model_start_lr"]
-            odict["loss"]["start_pref_e"] = config["init_model_start_pref_e"]
-            odict["loss"]["start_pref_f"] = config["init_model_start_pref_f"]
-            odict["loss"]["start_pref_v"] = config["init_model_start_pref_v"]
+            if "loss_dict" in odict:
+                for v in odict["loss_dict"].values():
+                    if isinstance(v, dict):
+                        v["start_pref_e"] = config["init_model_start_pref_e"]
+                        v["start_pref_f"] = config["init_model_start_pref_f"]
+                        v["start_pref_v"] = config["init_model_start_pref_v"]
+            else:
+                odict["loss"]["start_pref_e"] = config["init_model_start_pref_e"]
+                odict["loss"]["start_pref_f"] = config["init_model_start_pref_f"]
+                odict["loss"]["start_pref_v"] = config["init_model_start_pref_v"]
             if major_version == "1":
                 odict["training"]["stop_batch"] = config["init_model_numb_steps"]
             elif major_version == "2":
@@ -420,7 +456,7 @@ class RunDPTrain(OP):
 
     @staticmethod
     def training_args():
-        doc_impl = "The implementation of DP. It can be 'tensorflow' or 'pytorch'. 'tensorflow' for default."
+        doc_impl = "The implementation/backend of DP. It can be 'tensorflow' or 'pytorch'. 'tensorflow' for default."
         doc_init_model_policy = "The policy of init-model training. It can be\n\n\
     - 'no': No init-model training. Traing from scratch.\n\n\
     - 'yes': Do init-model training.\n\n\
@@ -440,7 +476,9 @@ class RunDPTrain(OP):
         doc_finetune_args = "Extra arguments for finetuning"
         doc_multitask = "Do multitask training"
         doc_head = "Head to use in the multitask training"
-        doc_multi_init_data_idx = "A dict mapping from task name to list of indices in the init data"
+        doc_multi_init_data_idx = (
+            "A dict mapping from task name to list of indices in the init data"
+        )
         doc_init_model_with_finetune = "Use finetune for init model"
         return [
             Argument(
@@ -449,6 +487,7 @@ class RunDPTrain(OP):
                 optional=True,
                 default="tensorflow",
                 doc=doc_impl,
+                alias=["backend"],
             ),
             Argument(
                 "init_model_policy",
@@ -534,7 +573,7 @@ class RunDPTrain(OP):
                 optional=True,
                 default=None,
                 doc=doc_multi_init_data_idx,
-            )
+            ),
         ]
 
     @staticmethod

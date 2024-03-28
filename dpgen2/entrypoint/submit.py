@@ -554,7 +554,7 @@ def workflow_concurrent_learning(
         train_config["multitask"] = True
         train_config["head"] = head
         train_config["multi_init_data_idx"] = multi_init_data_idx
-        lmp_config["head"] = head
+        explore_config["head"] = head
     else:
         init_data_prefix = config["inputs"]["init_data_prefix"]
         init_data = config["inputs"]["init_data_sys"]
@@ -771,7 +771,10 @@ def print_list_steps(
 
 def successful_step_keys(wf):
     all_step_keys = []
-    for step in wf.query_step():
+    steps = wf.query_step()
+    # For reused steps whose startedAt are identical, sort them by key
+    steps.sort(key=lambda x: "%s-%s" % (x.startedAt, x.key))
+    for step in steps:
         if step.key is not None and step.phase == "Succeeded":
             all_step_keys.append(step.key)
     return all_step_keys
@@ -905,6 +908,8 @@ def resubmit_concurrent_learning(
                 reused_folded_keys[k] = [k]
         reused_keys = sum(reused_folded_keys.values(), [])
     reuse_step = old_wf.query_step(key=reused_keys)
+    # For reused steps whose startedAt are identical, sort them by key
+    reuse_step.sort(key=lambda x: "%s-%s" % (x.startedAt, x.key))
 
     wf = submit_concurrent_learning(
         wf_config,
