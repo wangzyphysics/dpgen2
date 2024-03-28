@@ -984,22 +984,30 @@ class MockedCollRunCaly(CollRunCaly):
         results = (
             ip["results"].resolve() if ip["results"] is not None else ip["results"]
         )
-        opt_results_dir = (
-            ip["opt_results_dir"].resolve()
-            if ip["opt_results_dir"] is not None
-            else ip["opt_results_dir"]
-        )
+        # opt_results_dir = (
+        #     ip["opt_results_dir"].resolve()
+        #     if ip["opt_results_dir"] is not None
+        #     else ip["opt_results_dir"]
+        # )
+        opt_results_dir = []
+        if ip["opt_results_dir"] is not None:
+            for temp in ip["opt_results_dir"]:
+                opt_results_dir.append(Path(temp).resolve())
 
         os.chdir(work_dir)
         Path(input_file.name).symlink_to(input_file)
         if step is not None and results is not None and opt_results_dir is not None:
             step = ip["step"].resolve()
             results = ip["results"].resolve()
-            opt_results_dir = ip["opt_results_dir"].resolve()
+
+            for opt_results_name in opt_results_dir:
+                for file_name in opt_results_name.iterdir():
+                    Path(file_name.name).symlink_to(file_name)
+            # opt_results_dir = ip["opt_results_dir"].resolve()
 
             Path(step.name).symlink_to(step)
             Path(results.name).symlink_to(results)
-            Path(opt_results_dir.name).symlink_to(opt_results_dir)
+            # Path(opt_results_dir.name).symlink_to(opt_results_dir)
 
         for i in range(5):
             Path(f"POSCAR_{str(i)}").write_text(f"POSCAR_{str(i)}")
