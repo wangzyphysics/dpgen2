@@ -51,6 +51,20 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
+from context import (
+    default_host,
+    default_image,
+    skip_ut_with_dflow,
+    skip_ut_with_dflow_reason,
+    upload_python_packages,
+)
+from mocked_ops import (
+    MockedCollRunCaly,
+    MockedPrepDPOptim,
+    MockedRunDPOptim,
+    mocked_numb_models,
+)
+
 from dpgen2.constants import (
     lmp_conf_name,
     lmp_input_name,
@@ -82,20 +96,6 @@ from dpgen2.superop.caly_evo_step import (
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
 
-from .context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from .mocked_ops import (
-    MockedCollRunCaly,
-    MockedPrepDPOptim,
-    MockedRunDPOptim,
-    mocked_numb_models,
-)
-
 default_config = normalize_step_dict(
     {
         "template_config": {
@@ -109,7 +109,6 @@ default_config = normalize_step_dict(
 )
 
 
-@unittest.skip("temp")
 class TestMockedCollRunCaly(unittest.TestCase):
     def setUp(self) -> None:
         self.config = {}
@@ -160,7 +159,6 @@ class TestMockedCollRunCaly(unittest.TestCase):
         self.assertTrue(out["results"] == Path(self.task_name).joinpath("results"))
 
 
-@unittest.skip("temp")
 class TestMockedRunDPOptim(unittest.TestCase):
     def setUp(self) -> None:
         self.config = {}
@@ -204,7 +202,7 @@ class TestMockedRunDPOptim(unittest.TestCase):
         )
 
         self.assertTrue(optim_results_dir, Path(self.task_name) / "optim_results_dir")
-        self.assertEqual(counts_optim_results_dir, 10)
+        self.assertEqual(counts_optim_results_dir, 15)
         self.assertEqual(counts_outcar_in_optim_results_dir, 5)
         self.assertTrue(
             Path(self.task_name) / "optim_results_dir" / "CONTCAR_4"
@@ -218,13 +216,6 @@ class TestMockedRunDPOptim(unittest.TestCase):
         self.assertEqual(counts_traj, 5)
         self.assertTrue(
             Path(self.task_name) / "traj_results" / "3.traj", list_traj_results_dir
-        )
-
-        self.assertEqual(
-            Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"]
-        )
-        self.assertEqual(
-            Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"]
         )
 
 
@@ -281,6 +272,7 @@ class TestCalyEvoStep(unittest.TestCase):
             shutil.rmtree(i, ignore_errors=True)
         for i in Path().glob("caly_task*"):
             shutil.rmtree(i, ignore_errors=True)
+        shutil.rmtree("upload", ignore_errors=True)
 
     @unittest.skip("only need to run test_01")
     def test_00(self):

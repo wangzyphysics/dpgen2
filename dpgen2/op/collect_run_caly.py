@@ -67,7 +67,7 @@ class CollRunCaly(OP):
                     type=Path, optional=True
                 ),  # dir named results for evo
                 "opt_results_dir": Artifact(
-                    type=Path, optional=True
+                    type=List[Path], optional=True
                 ),  # dir contains POSCAR* CONTCAR* OUTCAR*
                 "qhull_input": Artifact(type=Path, optional=True),  # for vsc
             }
@@ -141,11 +141,16 @@ class CollRunCaly(OP):
         results = (
             ip["results"].resolve() if ip["results"] is not None else ip["results"]
         )
-        opt_results_dir = (
-            ip["opt_results_dir"].resolve()
-            if ip["opt_results_dir"] is not None
-            else ip["opt_results_dir"]
-        )
+        # opt_results_dir = (
+        #     ip["opt_results_dir"].resolve()
+        #     if ip["opt_results_dir"] is not None
+        #     else ip["opt_results_dir"]
+        # )
+        opt_results_dir = []
+        if ip["opt_results_dir"] is not None:
+            for temp in ip["opt_results_dir"]:
+                opt_results_dir.append(Path(temp).resolve())
+
         qhull_input = (
             ip["qhull_input"].resolve()
             if ip["qhull_input"] is not None

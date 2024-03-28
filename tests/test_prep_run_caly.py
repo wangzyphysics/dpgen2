@@ -60,8 +60,8 @@ from context import (
 )
 from mocked_ops import (
     MockedCollRunCaly,
-    MockedPrepRunDPOptim,
     MockedRunCalyModelDevi,
+    MockedRunDPOptim,
     mocked_numb_models,
 )
 
@@ -71,6 +71,9 @@ from dpgen2.exploration.task import (
 )
 from dpgen2.op.prep_caly_input import (
     PrepCalyInput,
+)
+from dpgen2.op.prep_dp_optim import (
+    PrepDPOptim,
 )
 from dpgen2.op.run_caly_model_devi import (
     RunCalyModelDevi,
@@ -83,11 +86,22 @@ from dpgen2.superop.prep_run_calypso import (
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
 
-default_config = normalize_step_dict(
+prep_default_config = normalize_step_dict(
     {
         "template_config": {
             "image": default_image,
-        }
+        },
+    }
+)
+run_default_config = normalize_step_dict(
+    {
+        "template_config": {
+            "image": default_image,
+        },
+        "template_slice_config": {
+            "group_size": 2,
+            "pool_size": 1,
+        },
     }
 )
 
@@ -105,7 +119,7 @@ def make_task_group_list(njobs):
 
 # @unittest.skip("temporary pass")
 @unittest.skipIf(skip_ut_with_dflow, skip_ut_with_dflow_reason)
-class TestCalyEvoStep(unittest.TestCase):
+class TestPrepRunCaly(unittest.TestCase):
     def setUp(self):
         self.expl_config = {}
         self.work_dir = Path("storge_files")
@@ -114,7 +128,9 @@ class TestCalyEvoStep(unittest.TestCase):
         self.nmodels = mocked_numb_models
         self.model_list = []
         for ii in range(self.nmodels):
-            model = self.work_dir.joinpath(f"model.{ii}.pb")
+            model_path = self.work_dir.joinpath(f"task.{ii}")
+            model_path.mkdir(parents=True, exist_ok=True)
+            model = model_path.joinpath(f"frozen_model.pb")
             model.write_text(f"model {ii}")
             self.model_list.append(model)
         self.models = upload_artifact(self.model_list)
@@ -127,15 +143,16 @@ class TestCalyEvoStep(unittest.TestCase):
         shutil.rmtree(self.work_dir, ignore_errors=True)
         for i in Path().glob("prep-run-caly-step*"):
             shutil.rmtree(i, ignore_errors=True)
-        # shutil.rmtree("upload", ignore_errors=True)
+        shutil.rmtree("upload", ignore_errors=True)
 
     def test(self):
         caly_evo_step_op = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
-            MockedPrepRunDPOptim,
-            prep_config=default_config,
-            run_config=default_config,
+            PrepDPOptim,
+            MockedRunDPOptim,
+            prep_config=prep_default_config,
+            run_config=run_default_config,
             upload_python_packages=upload_python_packages,
         )
         prep_run_caly_op = PrepRunCaly(
@@ -143,8 +160,8 @@ class TestCalyEvoStep(unittest.TestCase):
             PrepCalyInput,
             caly_evo_step_op,
             MockedRunCalyModelDevi,
-            prep_config=default_config,
-            run_config=default_config,
+            prep_config=prep_default_config,
+            run_config=run_default_config,
             upload_python_packages=upload_python_packages,
         )
         prep_run_caly_step = Step(

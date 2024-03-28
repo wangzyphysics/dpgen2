@@ -102,13 +102,6 @@ class TestRunDPOptim(unittest.TestCase):
             Path(self.task_name) / "traj_results" / "0.3.traj" in list_traj_results_dir
         )
 
-        self.assertEqual(
-            Path(self.task_name) / calypso_run_opt_file, out["caly_run_opt_file"]
-        )
-        self.assertEqual(
-            Path(self.task_name) / calypso_check_opt_file, out["caly_check_opt_file"]
-        )
-
     @patch("dpgen2.op.run_dp_optim.run_command")
     def test_01_error(self, mocked_run):
         def side_effect(*args, **kwargs):
