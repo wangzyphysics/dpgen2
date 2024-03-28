@@ -51,20 +51,6 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from mocked_ops import (
-    MockedCollRunCaly,
-    MockedRunCalyModelDevi,
-    MockedRunDPOptim,
-    mocked_numb_models,
-)
-
 from dpgen2.exploration.task import (
     BaseExplorationTaskGroup,
     ExplorationTask,
@@ -85,6 +71,20 @@ from dpgen2.superop.prep_run_calypso import (
     PrepRunCaly,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
+
+from .context import (
+    default_host,
+    default_image,
+    skip_ut_with_dflow,
+    skip_ut_with_dflow_reason,
+    upload_python_packages,
+)
+from .mocked_ops import (
+    MockedCollRunCaly,
+    MockedRunCalyModelDevi,
+    MockedRunDPOptim,
+    mocked_numb_models,
+)
 
 prep_default_config = normalize_step_dict(
     {

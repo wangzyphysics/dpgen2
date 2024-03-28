@@ -42,14 +42,23 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from context import (
+from dpgen2.constants import (
+    train_task_pattern,
+)
+from dpgen2.superop.prep_run_dp_train import (
+    ModifyTrainScript,
+    PrepRunDPTrain,
+)
+from dpgen2.utils.step_config import normalize as normalize_step_dict
+
+from .context import (
     default_host,
     default_image,
     skip_ut_with_dflow,
     skip_ut_with_dflow_reason,
     upload_python_packages,
 )
-from mocked_ops import (
+from .mocked_ops import (
     MockedModifyTrainScript,
     MockedPrepDPTrain,
     MockedRunDPTrain,
@@ -59,15 +68,6 @@ from mocked_ops import (
     mocked_numb_models,
     mocked_template_script,
 )
-
-from dpgen2.constants import (
-    train_task_pattern,
-)
-from dpgen2.superop.prep_run_dp_train import (
-    ModifyTrainScript,
-    PrepRunDPTrain,
-)
-from dpgen2.utils.step_config import normalize as normalize_step_dict
 
 default_config = normalize_step_dict(
     {

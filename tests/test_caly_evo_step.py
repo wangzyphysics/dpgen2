@@ -51,20 +51,6 @@ try:
 except ModuleNotFoundError:
     # case of upload everything to argo, no context needed
     pass
-from context import (
-    default_host,
-    default_image,
-    skip_ut_with_dflow,
-    skip_ut_with_dflow_reason,
-    upload_python_packages,
-)
-from mocked_ops import (
-    MockedCollRunCaly,
-    MockedPrepDPOptim,
-    MockedRunDPOptim,
-    mocked_numb_models,
-)
-
 from dpgen2.constants import (
     lmp_conf_name,
     lmp_input_name,
@@ -95,6 +81,20 @@ from dpgen2.superop.caly_evo_step import (
     CalyEvoStep,
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
+
+from .context import (
+    default_host,
+    default_image,
+    skip_ut_with_dflow,
+    skip_ut_with_dflow_reason,
+    upload_python_packages,
+)
+from .mocked_ops import (
+    MockedCollRunCaly,
+    MockedPrepDPOptim,
+    MockedRunDPOptim,
+    mocked_numb_models,
+)
 
 default_config = normalize_step_dict(
     {
@@ -372,12 +372,13 @@ class TestCalyEvoStep(unittest.TestCase):
 
         download_artifact(step.outputs.artifacts["traj_results"])
 
-        # cwd = Path().cwd()
-        # print(cwd, self.task_name_list)
-        # for idx, name in enumerate(self.task_name_list):
-        #     cwd = Path().cwd()
-        #     os.chdir(Path(name))
-        #     traj_list = list(Path().rglob("*.traj"))
-        #     self.assertEqual(len(traj_list), 5 * self.max_step)
-        #     self.assertTrue(Path("traj_results").joinpath(f"{idx}.2.traj") in traj_list)
-        #     os.chdir(cwd)
+        cwd = Path().cwd()
+        for idx, name in enumerate(self.task_name_list):
+            cwd = Path().cwd()
+            os.chdir(Path(name))
+            traj_list = list(Path().rglob("*.traj"))
+            self.assertEqual(len(traj_list), 5 * self.max_step)
+            self.assertTrue(
+                Path("opt_path_0/traj_results").joinpath(f"{idx}.0.traj") in traj_list
+            )
+            os.chdir(cwd)
