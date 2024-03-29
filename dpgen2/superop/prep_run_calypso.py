@@ -236,7 +236,7 @@ def _prep_run_caly(
             "models": prep_run_caly_steps.inputs.artifacts["models"],
         },
         key=step_keys["run-caly-model-devi"],
-        executor=prep_executor,
+        executor=run_executor,
         **prep_config,
     )
     prep_run_caly_steps.add(run_caly_model_devi)
