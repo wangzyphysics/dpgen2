@@ -232,7 +232,7 @@ config_args = CollRunCaly.calypso_args
 
 
 def prep_last_calypso_file(step, results, opt_results_dir, qhull_input, vsc):
-    if step is not None and results is not None or opt_results_dir is not None:
+    if step is not None and results is not None and opt_results_dir is not None:
         Path(step.name).symlink_to(step)
         Path(results.name).symlink_to(results)
         assert isinstance(opt_results_dir, list), "opt_results_dir should be a list."

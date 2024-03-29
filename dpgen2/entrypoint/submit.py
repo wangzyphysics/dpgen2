@@ -797,8 +797,10 @@ def get_superop(key):
         return key.replace("prep-caly-input", "prep-run-explore")
     elif "collect-run-calypso-" in key:
         return re.sub("collect-run-calypso-[0-9]*-[0-9]*", "prep-run-explore", key)
-    elif "prep-run-dp-optim-" in key:
-        return re.sub("prep-run-dp-optim-[0-9]*-[0-9]*", "prep-run-explore", key)
+    elif "prep-dp-optim-" in key:
+        return re.sub("prep-dp-optim-[0-9]*-[0-9]*", "prep-run-explore", key)
+    elif "run-dp-optim-" in key:
+        return re.sub("run-dp-optim-[0-9]*-[0-9]*-[0-9]*", "prep-run-explore", key)
     elif "run-caly-model-devi" in key:
         return key.replace("run-caly-model-devi", "prep-run-explore")
     return None
@@ -843,7 +845,8 @@ def get_resubmit_keys(
             "modify-train-script",
             "prep-caly-input",
             "collect-run-calypso",
-            "prep-run-dp-optim",
+            "prep-dp-optim",
+            "run-dp-optim",
             "run-caly-model-devi",
             "prep-run-explore",
             "prep-lmp",
