@@ -98,14 +98,14 @@ from dpgen2.superop.prep_run_lmp import (
 )
 from dpgen2.utils.step_config import normalize as normalize_step_dict
 
-from .context import (
+from context import (
     default_host,
     default_image,
     skip_ut_with_dflow,
     skip_ut_with_dflow_reason,
     upload_python_packages,
 )
-from .mocked_ops import (
+from mocked_ops import (
     MockedCollectData,
     MockedCollectDataCheckOptParam,
     MockedCollectDataFailed,
