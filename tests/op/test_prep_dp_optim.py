@@ -151,9 +151,3 @@ class TestPrepDPOptim(unittest.TestCase):
         self.assertEqual(
             out["task_names"], [str(Path(self.task_name) / Path("opt_path"))]
         )
-
-        # print(out["task_dirs"][0].exists())
-        # print(out["task_names"])
-        # opt_path = out["task_dirs"][0]
-        # opt_path_file_list = opt_path.iterdir()
-        # self.assertEqual(len(list(opt_path_file_list)), 0)

@@ -62,8 +62,6 @@ class RunCalyDPOptim(OP):
                 "task_name": Parameter(str),
                 "optim_results_dir": Artifact(Path),
                 "traj_results": Artifact(Path),
-                # "caly_run_opt_file": Artifact(Path),
-                # "caly_check_opt_file": Artifact(Path),
             }
         )
 

@@ -972,7 +972,6 @@ class MockedCollRunCaly(CollRunCaly):
 
         # work_dir name: calypso_task.idx
         work_dir = Path(ip["task_name"])
-        # print("==============----------work_dir in collruncaly:", work_dir)
         work_dir.mkdir(exist_ok=True, parents=True)
 
         qhull_input = (
@@ -1041,9 +1040,6 @@ class MockedCollRunCaly(CollRunCaly):
             target = poscar_dir.joinpath(poscar.name)
             shutil.copyfile(poscar, target)
         finished = "true" if int(cnt_num) == int(max_step) else "false"
-        # print(f"-------------cnt_num: {cnt_num}, -------max_step---:{max_step}")
-        # print(f"-------------step_num: {step_num}")
-        # print(f"-------------finished: {finished}")
 
         os.chdir(cwd)
         ret_dict = {
@@ -1068,7 +1064,6 @@ class MockedPrepCalyDPOptim(PrepCalyDPOptim):
 
         finished = ip["finished"]
         work_dir = Path(ip["task_name"])
-        # print(f"--------=---------task_name: {work_dir}")
         work_dir.mkdir(parents=True, exist_ok=True)
 
         poscar_dir = ip["poscar_dir"]
@@ -1130,15 +1125,12 @@ class MockedRunCalyDPOptim(RunCalyDPOptim):
         finished = ip["finished"]
         work_dir = Path(ip["task_name"])
         cnt_num = ip["cnt_num"]
-        # print(f"----in RunDpOptim----task_name: {work_dir}")
-        # print(f"----cwd in RunDPOptim------cwd: {cwd}")
         work_dir.mkdir(parents=True, exist_ok=True)
 
         config = ip["config"] if ip["config"] is not None else {}
         command = config.get("run_opt_command", "python -u calypso_run_opt.py")
 
         task_path = ip["task_dir"]
-        # print(f"----in RunDpOptim----task_dir: {task_path}")
         if task_path is not None:
             input_files = [ii.resolve() for ii in Path(task_path).iterdir()]
         else:
@@ -1152,7 +1144,6 @@ class MockedRunCalyDPOptim(RunCalyDPOptim):
                 Path(iname).symlink_to(ii)
 
             poscar_list = sorted(Path().rglob("POSCAR_*"))
-            # print(f"-----in RunDpOptim----poscar_list: {poscar_list}")
             cnt = 0
             for poscar in poscar_list:
                 cnt += 1

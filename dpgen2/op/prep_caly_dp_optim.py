@@ -111,17 +111,13 @@ class PrepCalyDPOptim(OP):
         finished = ip["finished"]
 
         work_dir = Path(ip["task_name"])
-        # print("-----in PrepDPOptim====work_dir(task_name)", work_dir)
         poscar_dir = ip["poscar_dir"]
         models_dir = ip["models_dir"]
-        # print("-----in PrepDPOptim====poscar_dir", poscar_dir)
-        # print("-----in PrepDPOptim====models_dir", models_dir)
         _caly_run_opt_file = ip["caly_run_opt_file"]
         _caly_check_opt_file = ip["caly_check_opt_file"]
         caly_run_opt_file = _caly_run_opt_file.resolve()
         caly_check_opt_file = _caly_check_opt_file.resolve()
         poscar_list = [poscar.resolve() for poscar in poscar_dir.rglob("POSCAR_*")]
-        # print("-----in PrepDPOptim====len(poscar_dir.rglob(POSCAR*))", len(poscar_list))
         poscar_list = sorted(poscar_list, key=lambda x: int(x.name.strip("POSCAR_")))
         model_name = "frozen_model.pb"
         model_list = [model.resolve() for model in models_dir.rglob(model_name)]
@@ -143,7 +139,6 @@ class PrepCalyDPOptim(OP):
                 task_dirs = []
                 for idx, _poscar_list in enumerate(grouped_poscar_list):
                     opt_path = Path(f"opt_path_{idx}")
-                    # print("-----in PrepDPOptim====opt_path, _poscar_list)", opt_path, _poscar_list)
                     task_dirs.append(work_dir / opt_path)
                     with set_directory(opt_path):
                         for poscar in _poscar_list:
