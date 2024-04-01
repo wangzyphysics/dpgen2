@@ -73,7 +73,7 @@ from dpgen2.op.collect_data import (
 from dpgen2.op.collect_run_caly import (
     CollRunCaly,
 )
-from dpgen2.dpgen2.op.prep_caly_dp_optim import (
+from dpgen2.op.prep_caly_dp_optim import (
     PrepCalyDPOptim,
 )
 from dpgen2.op.prep_dp_train import (
@@ -82,11 +82,11 @@ from dpgen2.op.prep_dp_train import (
 from dpgen2.op.prep_lmp import (
     PrepExplorationTaskGroup,
 )
+from dpgen2.op.run_caly_dp_optim import (
+    RunCalyDPOptim,
+)
 from dpgen2.op.run_caly_model_devi import (
     RunCalyModelDevi,
-)
-from dpgen2.dpgen2.op.run_caly_dp_optim import (
-    RunCalyDPOptim,
 )
 from dpgen2.op.run_dp_train import (
     RunDPTrain,

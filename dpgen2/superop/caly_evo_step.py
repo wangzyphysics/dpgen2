@@ -94,6 +94,7 @@ class CalyEvoStep(Steps):
         )
 
         self.step_keys = {}
+        self._keys = []
         self = _caly_evo_step(
             self,
             self.step_keys,
