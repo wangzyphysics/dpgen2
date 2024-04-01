@@ -73,8 +73,8 @@ from dpgen2.op.collect_data import (
 from dpgen2.op.collect_run_caly import (
     CollRunCaly,
 )
-from dpgen2.op.prep_dp_optim import (
-    PrepDPOptim,
+from dpgen2.dpgen2.op.prep_caly_dp_optim import (
+    PrepCalyDPOptim,
 )
 from dpgen2.op.prep_dp_train import (
     PrepDPTrain,
@@ -85,8 +85,8 @@ from dpgen2.op.prep_lmp import (
 from dpgen2.op.run_caly_model_devi import (
     RunCalyModelDevi,
 )
-from dpgen2.op.run_dp_optim import (
-    RunDPOptim,
+from dpgen2.dpgen2.op.run_caly_dp_optim import (
+    RunCalyDPOptim,
 )
 from dpgen2.op.run_dp_train import (
     RunDPTrain,
@@ -1058,7 +1058,7 @@ class MockedCollRunCaly(CollRunCaly):
         return OPIO(ret_dict)
 
 
-class MockedPrepDPOptim(PrepDPOptim):
+class MockedPrepCalyDPOptim(PrepCalyDPOptim):
     @OP.exec_sign_check
     def execute(
         self,
@@ -1119,7 +1119,7 @@ class MockedPrepDPOptim(PrepDPOptim):
         )
 
 
-class MockedRunDPOptim(RunDPOptim):
+class MockedRunCalyDPOptim(RunCalyDPOptim):
     @OP.exec_sign_check
     def execute(
         self,

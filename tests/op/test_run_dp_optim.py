@@ -29,7 +29,7 @@ from dpgen2.constants import (
     calypso_run_opt_file,
     calypso_check_opt_file,
 )
-from dpgen2.op import RunDPOptim
+from dpgen2.op import RunCalyDPOptim
 from dpgen2.utils import (
     BinaryFileInput,
 )
@@ -63,7 +63,7 @@ class TestRunDPOptim(unittest.TestCase):
             return (0, "foo\n", "")
 
         mocked_run.side_effect = side_effect
-        op = RunDPOptim()
+        op = RunCalyDPOptim()
         out = op.execute(
             OPIO(
                 {
@@ -112,7 +112,7 @@ class TestRunDPOptim(unittest.TestCase):
             return (1, "foo\n", "")
 
         mocked_run.side_effect = side_effect
-        op = RunDPOptim()
+        op = RunCalyDPOptim()
         self.assertRaises(
             TransientError,
             op.execute,
@@ -128,7 +128,7 @@ class TestRunDPOptim(unittest.TestCase):
         )
 
     def test_02_success(self):
-        op = RunDPOptim()
+        op = RunCalyDPOptim()
         out = op.execute(
             OPIO(
                 {

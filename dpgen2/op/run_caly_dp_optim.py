@@ -36,7 +36,7 @@ from dpgen2.utils.run_command import (
 )
 
 
-class RunDPOptim(OP):
+class RunCalyDPOptim(OP):
     r"""Perform structure optimization with DP in `ip["work_path"]`.
 
     The `optim_results_dir` and `traj_results` will be returned as `op["optim_results_dir"]`

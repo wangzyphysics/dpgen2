@@ -38,7 +38,7 @@ from dpgen2.utils.run_command import (
 )
 
 
-class PrepDPOptim(OP):
+class PrepCalyDPOptim(OP):
     r"""Prepare the working directories and input file according to slices information
     for structure optimization with DP.
 

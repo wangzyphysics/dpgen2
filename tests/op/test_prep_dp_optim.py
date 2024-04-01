@@ -29,7 +29,7 @@ from dpgen2.constants import (
     calypso_run_opt_file,
     calypso_check_opt_file,
 )
-from dpgen2.op import PrepDPOptim
+from dpgen2.op import PrepCalyDPOptim
 from dpgen2.utils import (
     BinaryFileInput,
 )
@@ -83,7 +83,7 @@ class TestPrepDPOptim(unittest.TestCase):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
 
-        op = PrepDPOptim()
+        op = PrepCalyDPOptim()
         out = op.execute(
             OPIO(
                 {
@@ -131,7 +131,7 @@ class TestPrepDPOptim(unittest.TestCase):
         if Path(self.task_name).is_dir():
             shutil.rmtree(Path(self.task_name))
 
-        op = PrepDPOptim()
+        op = PrepCalyDPOptim()
         out = op.execute(
             OPIO(
                 {

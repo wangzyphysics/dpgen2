@@ -61,7 +61,7 @@ from context import (
 from mocked_ops import (
     MockedCollRunCaly,
     MockedRunCalyModelDevi,
-    MockedRunDPOptim,
+    MockedRunCalyDPOptim,
     mocked_numb_models,
 )
 
@@ -72,8 +72,8 @@ from dpgen2.exploration.task import (
 from dpgen2.op.prep_caly_input import (
     PrepCalyInput,
 )
-from dpgen2.op.prep_dp_optim import (
-    PrepDPOptim,
+from dpgen2.dpgen2.op.prep_caly_dp_optim import (
+    PrepCalyDPOptim,
 )
 from dpgen2.op.run_caly_model_devi import (
     RunCalyModelDevi,
@@ -149,8 +149,8 @@ class TestPrepRunCaly(unittest.TestCase):
         caly_evo_step_op = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
-            PrepDPOptim,
-            MockedRunDPOptim,
+            PrepCalyDPOptim,
+            MockedRunCalyDPOptim,
             prep_config=prep_default_config,
             run_config=run_default_config,
             upload_python_packages=upload_python_packages,

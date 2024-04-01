@@ -7,8 +7,8 @@ from .collect_run_caly import (
 from .prep_caly_input import (
     PrepCalyInput,
 )
-from .prep_dp_optim import (
-    PrepDPOptim,
+from .prep_caly_dp_optim import (
+    PrepCalyDPOptim,
 )
 from .prep_dp_train import (
     PrepDPTrain,
@@ -19,8 +19,8 @@ from .prep_lmp import (
 from .run_caly_model_devi import (
     RunCalyModelDevi,
 )
-from .run_dp_optim import (
-    RunDPOptim,
+from .run_caly_dp_optim import (
+    RunCalyDPOptim,
 )
 from .run_dp_train import (
     RunDPTrain,

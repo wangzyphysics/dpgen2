@@ -60,8 +60,8 @@ from context import (
 )
 from mocked_ops import (
     MockedCollRunCaly,
-    MockedPrepDPOptim,
-    MockedRunDPOptim,
+    MockedPrepCalyDPOptim,
+    MockedRunCalyDPOptim,
     mocked_numb_models,
 )
 
@@ -82,8 +82,8 @@ from dpgen2.exploration.task import (
     ExplorationTaskGroup,
 )
 from dpgen2.op import (
-    PrepDPOptim,
-    RunDPOptim,
+    PrepCalyDPOptim,
+    RunCalyDPOptim,
 )
 from dpgen2.op.collect_run_caly import (
     CollRunCaly,
@@ -178,7 +178,7 @@ class TestMockedRunDPOptim(unittest.TestCase):
         shutil.rmtree(Path(self.task_name), ignore_errors=True)
 
     def test_mocked_run_dp_optim(self):
-        op = MockedRunDPOptim()
+        op = MockedRunCalyDPOptim()
         out = op.execute(
             OPIO(
                 {
@@ -279,8 +279,8 @@ class TestCalyEvoStep(unittest.TestCase):
         steps = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
-            PrepDPOptim,
-            MockedRunDPOptim,
+            PrepCalyDPOptim,
+            MockedRunCalyDPOptim,
             prep_config=default_config,
             run_config=default_config,
             upload_python_packages=upload_python_packages,
@@ -319,8 +319,8 @@ class TestCalyEvoStep(unittest.TestCase):
         steps = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
-            PrepDPOptim,
-            MockedRunDPOptim,
+            PrepCalyDPOptim,
+            MockedRunCalyDPOptim,
             prep_config=default_config,
             run_config=default_config,
             upload_python_packages=upload_python_packages,
