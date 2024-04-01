@@ -44,6 +44,12 @@ from dpgen2.constants import (
     train_script_name,
     train_task_pattern,
 )
+from dpgen2.dpgen2.op.prep_caly_dp_optim import (
+    PrepCalyDPOptim,
+)
+from dpgen2.dpgen2.op.run_caly_dp_optim import (
+    RunCalyDPOptim,
+)
 from dpgen2.exploration.report import (
     ExplorationReport,
 )
@@ -73,9 +79,6 @@ from dpgen2.op.collect_data import (
 from dpgen2.op.collect_run_caly import (
     CollRunCaly,
 )
-from dpgen2.dpgen2.op.prep_caly_dp_optim import (
-    PrepCalyDPOptim,
-)
 from dpgen2.op.prep_dp_train import (
     PrepDPTrain,
 )
@@ -84,9 +87,6 @@ from dpgen2.op.prep_lmp import (
 )
 from dpgen2.op.run_caly_model_devi import (
     RunCalyModelDevi,
-)
-from dpgen2.dpgen2.op.run_caly_dp_optim import (
-    RunCalyDPOptim,
 )
 from dpgen2.op.run_dp_train import (
     RunDPTrain,
