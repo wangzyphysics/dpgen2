@@ -76,9 +76,7 @@ class CalyEvoStep(Steps):
             "opt_results_dir": InputArtifact(optional=True),
             "qhull_input": InputArtifact(optional=True),
         }
-        self._output_parameters = {
-            # "task_name": OutputParameter(),
-        }
+        self._output_parameters = {}
         self._output_artifacts = {
             "traj_results": OutputArtifact(),
         }
@@ -95,33 +93,7 @@ class CalyEvoStep(Steps):
             ),
         )
 
-        self.collect_run_calypso_keys = [
-            "%s--collect-run-calypso-%s-%s" % (self.inputs.parameters["block_id"], i, j)
-            for i in range(20)
-            for j in range(20)
-        ]
-        self.prep_dp_optim_keys = [
-            "%s--prep-dp-optim-%s-%s" % (self.inputs.parameters["block_id"], i, j)
-            for i in range(20)
-            for j in range(20)
-        ]
-        self.run_dp_optim_keys = [
-            "%s--run-dp-optim-%s-%s-%s" % (self.inputs.parameters["block_id"], i, j, k)
-            for i in range(20)
-            for j in range(20)
-            for k in range(50)
-        ]
-        self._keys = (
-            self.collect_run_calypso_keys
-            + self.prep_dp_optim_keys
-            + self.run_dp_optim_keys
-        )
         self.step_keys = {}
-        for ii in self._keys:
-            self.step_keys[ii] = "--".join(
-                ["%s" % self.inputs.parameters["block_id"], ii]
-            )
-
         self = _caly_evo_step(
             self,
             self.step_keys,
