@@ -65,12 +65,12 @@ from mocked_ops import (
     mocked_numb_models,
 )
 
-from dpgen2.dpgen2.op.prep_caly_dp_optim import (
-    PrepCalyDPOptim,
-)
 from dpgen2.exploration.task import (
     BaseExplorationTaskGroup,
     ExplorationTask,
+)
+from dpgen2.op.prep_caly_dp_optim import (
+    PrepCalyDPOptim,
 )
 from dpgen2.op.prep_caly_input import (
     PrepCalyInput,
