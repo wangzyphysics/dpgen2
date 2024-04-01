@@ -53,7 +53,7 @@ class TestRunDPOptim(unittest.TestCase):
         shutil.rmtree(self.task_name)
         shutil.rmtree(self.task_dir)
 
-    @patch("dpgen2.op.run_dp_optim.run_command")
+    @patch("dpgen2.op.run_caly_dp_optim.run_command")
     def test_00_success(self, mocked_run):
         def side_effect(*args, **kwargs):
             for i in range(1, 11):
@@ -102,7 +102,7 @@ class TestRunDPOptim(unittest.TestCase):
             Path(self.task_name) / "traj_results" / "0.3.traj" in list_traj_results_dir
         )
 
-    @patch("dpgen2.op.run_dp_optim.run_command")
+    @patch("dpgen2.op.run_caly_dp_optim.run_command")
     def test_01_error(self, mocked_run):
         def side_effect(*args, **kwargs):
             for i in range(1, 6):
