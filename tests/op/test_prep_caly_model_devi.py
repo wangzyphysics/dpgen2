@@ -91,7 +91,7 @@ class TestPrepCalyModelDevi(unittest.TestCase):
         # check traj number
         self.assertEqual(len(traj_list), 5)
         # check traj file name
-        self.assertTrue(Path("run_dir/trajs_part_0/1.1.traj") in traj_list)
+        self.assertTrue(Path("run_dir/trajs_part_0/0.0.0.traj") in traj_list)
 
     def test_01_success(self):
         op = PrepCalyModelDevi()
@@ -116,4 +116,4 @@ class TestPrepCalyModelDevi(unittest.TestCase):
         # check traj number
         self.assertEqual(len(traj_list), 10)
         # check traj file name
-        self.assertTrue(Path("run_dir/trajs_part_0/1.1.traj") in traj_list)
+        self.assertTrue(Path("run_dir/trajs_part_0/0.0.0.traj") in traj_list)
