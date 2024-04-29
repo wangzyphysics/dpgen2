@@ -1,6 +1,9 @@
 import os
 import shutil
 import unittest
+from ast import (
+    Slice,
+)
 from pathlib import (
     Path,
 )
@@ -17,11 +20,15 @@ from ase import (
 from ase.io import (
     write,
 )
+from dflow import (
+    Step,
+)
 from dflow.python import (
     OP,
     OPIO,
     Artifact,
     OPIOSign,
+    PythonOPTemplate,
     TransientError,
 )
 
@@ -131,8 +138,6 @@ ITEM: ATOMS id type x y z fx fy fz
         dump_str = atoms2lmpdump(self.atoms_normal_2, 1, self.type_map)
         self.assertEqual(dump_str, self.ref_dump_str)
 
-    # @patch("dpgen2.op.run_caly_model_devi.RunCalyModelDevi.import_deepmd_package.calc_model_devi")
-    # @patch("dpgen2.op.run_caly_model_devi.RunCalyModelDevi.import_deepmd_package.DP")
     @unittest.skipIf(x == 1, "deepmd package not exists.")
     @patch("deepmd.infer.calc_model_devi")
     @patch("deepmd.infer.DeepPot")
@@ -180,3 +185,43 @@ ITEM: ATOMS id type x y z fx fy fz
         self.assertTrue(
             self.task_name / "model_devi.3.out" in out["model_devi"],
         )
+
+
+#     @unittest.skipIf(x == 1, "deepmd package not exists.")
+#     @patch("deepmd.infer.calc_model_devi")
+#     @patch("deepmd.infer.DeepPot")
+#     def test_03_slice_caly_model_devi(self, mocked_run_1, mocked_run_2):
+#         def side_effect_1(*args, **kwargs):
+#             return "foo"
+#
+#         mocked_run_1.side_effect = side_effect_1
+#
+#         def side_effect_2(*args, **kwargs):
+#             return [[1, 1, 1, 1, 1, 1, 1, 1]]
+#
+#         mocked_run_2.side_effect = side_effect_2
+#
+#         run_caly_model_devi = Step(
+#             "run-caly-model-devi",
+#             template=PythonOPTemplate(
+#                 RunCalyModelDevi,
+#                 slices=Slice(
+#                     input_parameter=[
+#                         "task_name",
+#                     ],
+#                     input_artifact=[
+#                         "traj_dirs",
+#                     ],
+#                     output_parameter=["task_name"],
+#                     output_artifact=["traj", "model_devi"],
+#                 )
+#             ),
+#             parameters={
+#                 "type_map": ["Mg", "Al"],
+#                 "task_name": [],
+#             },
+#             artifacts={
+#                 "models": self.models,
+#                 "traj_dirs": self.input_file_list,
+#             },
+#         )
