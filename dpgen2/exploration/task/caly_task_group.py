@@ -1,4 +1,5 @@
 import copy
+import logging
 import random
 from typing import (
     List,
@@ -129,7 +130,7 @@ class CalyTaskGroup(ExplorationTaskGroup):
                 choice = []
                 for _atoms in name_of_atoms:
                     value = random.choice(_atoms)
-                    print(
+                    logging.info(
                         f"randomly choose {value} from {_atoms}, already choose: {choice}"
                     )
                     if value in choice:
@@ -138,7 +139,7 @@ class CalyTaskGroup(ExplorationTaskGroup):
                 else:
                     break
             self.name_of_atoms = choice
-            print(f"The final choice is {self.name_of_atoms}")
+            logging.info(f"The final choice is {self.name_of_atoms}")
             self.atomic_number = [atomic_symbols.index(i) for i in self.name_of_atoms]
         else:
             self.name_of_atoms = name_of_atoms
