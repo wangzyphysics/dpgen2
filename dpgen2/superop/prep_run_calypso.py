@@ -97,8 +97,8 @@ class PrepRunCaly(Steps):
         self._keys = [
             "prep-caly-input",
             "caly-evo-step-{{item}}",
-            "prep-calypso-model-devi",
-            "run-calypso-model-devi",
+            "prep-caly-model-devi",
+            "run-caly-model-devi",
         ]
         self.step_keys = {}
         ii = "prep-caly-input"
@@ -240,7 +240,7 @@ def _prep_run_caly(
         artifacts={
             "traj_results": caly_evo_step.outputs.artifacts["traj_results"],
         },
-        key="%s--prep-calypso-model-devi"
+        key="%s--prep-caly-model-devi"
         % (prep_run_caly_steps.inputs.parameters["block_id"],),
         executor=prep_executor,
     )
@@ -267,7 +267,7 @@ def _prep_run_caly(
             "traj_dirs": prep_caly_model_devi.outputs.artifacts["grouped_traj_list"],
             "models": prep_run_caly_steps.inputs.artifacts["models"],
         },
-        key="%s--run-calypso-model-devi-{{item}}"
+        key="%s--run-caly-model-devi-{{item}}"
         % (prep_run_caly_steps.inputs.parameters["block_id"],),
         executor=run_executor,
         **prep_config,
