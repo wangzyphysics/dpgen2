@@ -182,13 +182,13 @@ def _prep_run_caly(
     if expl_mode == "default":
         caly_evo_step_config = prep_config
         caly_evo_step_executor = None
-        caly_evo_step_slice_config = deepcopy(template_slice_config)
-        caly_evo_step_slice_config.pop("model_devi_group_size", None)
+        caly_evo_step_slice_config = {}
         template = caly_evo_step_op
     elif expl_mode == "merge":
         caly_evo_step_config = run_config
         caly_evo_step_executor = run_executor
-        caly_evo_step_slice_config = {}
+        caly_evo_step_slice_config = deepcopy(template_slice_config)
+        caly_evo_step_slice_config.pop("model_devi_group_size", None)
         template = PythonOPTemplate(
             caly_evo_step_op,  # type: ignore
             python_packages=upload_python_packages,
