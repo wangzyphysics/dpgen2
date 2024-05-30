@@ -352,6 +352,13 @@ def caly_task_grp_args():
             doc="the converge criterion. The force on all individual atoms should be less than `fmax`.",
         ),
         Argument(
+            "opt_step",
+            float,
+            optional=True,
+            default=1000,
+            doc="the converge criterion. The force on all individual atoms should be less than `fmax`.",
+        ),
+        Argument(
             "volume",
             float,
             optional=True,

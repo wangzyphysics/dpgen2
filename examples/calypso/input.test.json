@@ -453,7 +453,10 @@
                     ],
                     "pop_size": 5,
                     "max_step": 2,
-                    "distance_of_ions": {"Mg": 0.7, "Si": 0.7, "O": 0.7, "La": 0.7, "Li": 0.7, "H": 0.7}
+                    "distance_of_ions": {"Mg": 0.7, "Si": 0.7, "O": 0.7, "La": 0.7, "Li": 0.7, "H": 0.7},
+		    "opt_step": 1,
+		    "fmax": 1,
+		    "pressure": 10
                 },
                 {
                     "numb_of_species": 2,
