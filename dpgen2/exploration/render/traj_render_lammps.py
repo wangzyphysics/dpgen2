@@ -45,8 +45,20 @@ class TrajRenderLammps(TrajRender):
 
         return model_devi
 
+    def _load_one_model_devi_deprecated(self, fname, model_devi):
+        dd = np.loadtxt(fname)
+        model_devi.add(DeviManager.MAX_DEVI_V, dd[:, 1])
+        model_devi.add(DeviManager.MIN_DEVI_V, dd[:, 2])
+        model_devi.add(DeviManager.AVG_DEVI_V, dd[:, 3])
+        model_devi.add(DeviManager.MAX_DEVI_F, dd[:, 4])
+        model_devi.add(DeviManager.MIN_DEVI_F, dd[:, 5])
+        model_devi.add(DeviManager.AVG_DEVI_F, dd[:, 6])
+
     def _load_one_model_devi(self, fname, model_devi):
         dd = np.loadtxt(fname)
+        if len(np.shape(dd)) == 1:  # In case model-devi.out is 1-dimensional
+            dd = dd.reshape((1, len(dd)))
+
         model_devi.add(DeviManager.MAX_DEVI_V, dd[:, 1])
         model_devi.add(DeviManager.MIN_DEVI_V, dd[:, 2])
         model_devi.add(DeviManager.AVG_DEVI_V, dd[:, 3])

@@ -226,7 +226,7 @@ def atoms2lmpdump(atoms, struc_idx, type_map, ignore=False):
     return dump_str
 
 
-def parse_traj(traj_file):
+def parse_traj_deprecated(traj_file):
     from ase import (  # type: ignore
         Atoms,
     )
@@ -269,6 +269,105 @@ def parse_traj(traj_file):
             selected_traj = [trajs[0]]
     else:
         selected_traj = None
+    return selected_traj
+
+
+def parse_traj(traj_file):
+    from ase import (  # type: ignore
+        Atoms,
+    )
+    from ase.build import (  # type: ignore
+        make_supercell,
+    )
+    from ase.io import (  # type: ignore
+        read,
+    )
+
+    safe_dist_dict = {
+        "He": 0.0,
+        "Li": 1.5,
+        "Na": 1.45,
+        "K": 2.3,
+        "Rb": 2.5,
+        "Mg": 1.7,
+        "Ca": 2.3,
+        "Sr": 2.5,
+        "Al": 1.7,
+        "Sc": 2.0,
+        "Y": 2.1,
+        "La": 2.5,
+        "Ti": 2.0,
+        "Zr": 2.1,
+        "Hf": 2.4,
+        "Mo": 2.1,
+        "W": 2.3,
+        "B": 1.1,
+        "C": 1.1,
+        "Si": 1.6,
+        "P": 1.5,
+        "As": 2.0,
+        "S": 1.5,
+        "Se": 2.1,
+        "Te": 2.0,
+        "Br": 2.3,
+        "H": 0.813,
+    }
+
+    trajs: List[Atoms] = read(traj_file, index=":", format="traj")  # type: ignore
+    dthresh = 0.72
+    numb_traj = len(trajs)
+    assert numb_traj >= 1, "traj file is broken."
+
+    # 1st Filter, initial configuration
+    origin = trajs[0]
+    origin = make_supercell(origin, [[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+    dis_mtx = origin.get_all_distances(mic=True)
+    row, col = np.diag_indices_from(dis_mtx)
+    dis_mtx[row, col] = np.nan
+    is_reasonable = np.nanmin(dis_mtx) > dthresh
+
+    selected_traj: Union[List[Atoms], None] = None
+    if is_reasonable:
+        if len(trajs) >= 20:
+            selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
+        elif 5 <= len(trajs) < 20:
+            selected_traj = [
+                trajs[np.random.randint(3, len(trajs) - 1)] for _ in range(4)
+            ]
+            selected_traj.append(trajs[-1])
+        elif 3 <= len(trajs) < 5:
+            selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
+            selected_traj.append(trajs[-1])
+        elif len(trajs) == 2:
+            selected_traj = [trajs[0], trajs[-1]]
+        else:
+            selected_traj = [trajs[0]]
+
+        # 2nd filter for selected traj. It filters out all FRAMES that are to close.
+        i_keep = []
+        for t in selected_traj:
+            t2 = make_supercell(t, [[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+
+            frame_is_reasonable = True
+            dist_dict = t2.get_all_distances(mic=True)
+            atype = t2.get_chemical_symbols()
+            for a in range(len(atype)):
+                for b in range(a + 1, len(atype)):
+                    dd = dist_dict[a][b]
+                    dr = (
+                        (safe_dist_dict[atype[a]] + safe_dist_dict[atype[b]])
+                        * 0.529
+                        / 1.2
+                    )
+                    if dd < dr:
+                        frame_is_reasonable = False
+
+            if frame_is_reasonable:
+                i_keep.append(selected_traj.index(t))
+        selected_traj = [selected_traj[iii] for iii in i_keep]
+    else:
+        selected_traj = None
+
     return selected_traj
 
 
