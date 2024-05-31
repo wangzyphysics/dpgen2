@@ -78,7 +78,6 @@ class RunCalyModelDevi(OP):
             - `model_devi`: (`Artifact(List[Path])`) The model deviation. The order of recorded model deviations should be consistent with the order of frames in `traj`.
 
         """
-
         from deepmd.infer import (  # type: ignore
             DeepPot,
             calc_model_devi,
@@ -110,15 +109,15 @@ class RunCalyModelDevi(OP):
                     for atoms in atoms_list:
                         natoms = len(atoms)
                         dump_str = atoms2lmpdump(atoms, tcount, type_map, ignore=True)
-                        dump_str_dict[natoms].append(dump_str)
+                        dump_str_dict[tcount].append(dump_str)
 
                         pbc = np.all(atoms.get_pbc())
                         coord = atoms.get_positions().reshape(1, -1)
                         cell = atoms.get_cell().array.reshape(1, -1) if pbc else None
                         atype = [type_map.index(atom.symbol) for atom in atoms]  # type: ignore
                         devi = calc_model_devi(coord, cell, atype, graphs)[0]
-                        devis_dict[natoms].append(devi)
-                        tcount += 1
+                        devis_dict[tcount].append(devi)
+                    tcount += 1
 
             traj_file_list = []
             model_devi_file_list = []
@@ -224,52 +223,6 @@ def atoms2lmpdump(atoms, struc_idx, type_map, ignore=False):
         dump_str += "%20.10f %20.10f %20.10f\n" % (0, 0, 0)
     # dump_str = dump_str.strip("\n")
     return dump_str
-
-
-def parse_traj_deprecated(traj_file):
-    from ase import (  # type: ignore
-        Atoms,
-    )
-    from ase.build import (  # type: ignore
-        make_supercell,
-    )
-    from ase.io import (  # type: ignore
-        read,
-    )
-
-    # optimization will at least return one structures in traj file
-    trajs: List[Atoms] = read(traj_file, index=":", format="traj")  # type: ignore
-
-    numb_traj = len(trajs)
-    assert numb_traj >= 1, "traj file is broken."
-
-    origin = trajs[0]
-    if len(origin) == 1:
-        origin = make_supercell(origin, [[2, 0, 0], [0, 2, 0], [0, 0, 2]])
-    dis_mtx = origin.get_all_distances(mic=True)
-    row, col = np.diag_indices_from(dis_mtx)
-    dis_mtx[row, col] = np.nan
-    is_reasonable = np.nanmin(dis_mtx) > 0.6
-
-    selected_traj: Union[List[Atoms], None] = None
-    if is_reasonable:
-        if len(trajs) >= 20:
-            selected_traj = [trajs[iii] for iii in [4, 9, -10, -5, -1]]
-        elif 5 <= len(trajs) < 20:
-            selected_traj = [
-                trajs[np.random.randint(3, len(trajs) - 1)] for _ in range(4)
-            ]
-            selected_traj.append(trajs[-1])
-        elif 3 <= len(trajs) < 5:
-            selected_traj = [trajs[round((len(trajs) - 1) / 2)]]
-            selected_traj.append(trajs[-1])
-        elif len(trajs) == 2:
-            selected_traj = [trajs[0], trajs[-1]]
-        else:  # len(trajs) == 1
-            selected_traj = [trajs[0]]
-    else:
-        selected_traj = None
-    return selected_traj
 
 
 def parse_traj(traj_file):
