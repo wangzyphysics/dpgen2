@@ -142,17 +142,13 @@ class TestPrepRunCaly(unittest.TestCase):
     def test_caly_evo_step_merge_merge_mode(self):
         run_default_config = normalize_step_dict(
             {
-                "mode": "merge",
                 "template_config": {
                     "image": default_image,
                 },
-                "template_slice_config": {
-                    "group_size": 2,
-                    "pool_size": 1,
-                    "model_devi_group_size": 30,
-                },
+                "template_slice_config": {"group_size": 2, "pool_size": 1},
             }
         )
+        explore_config = {"mode": "merge", "model_devi_group_size": 30}
         caly_evo_step_op = CalyEvoStepMerge(
             name="caly-evo-step",
             collect_run_caly=MockedCollRunCaly,
@@ -168,6 +164,7 @@ class TestPrepRunCaly(unittest.TestCase):
             caly_evo_step_op,
             PrepCalyModelDevi,
             MockedRunCalyModelDevi,
+            explore_config=explore_config,
             prep_config=prep_default_config,
             run_config=run_default_config,
             upload_python_packages=upload_python_packages,
@@ -200,17 +197,13 @@ class TestPrepRunCaly(unittest.TestCase):
     def test_caly_evo_step_merge_default_mode(self):
         run_default_config = normalize_step_dict(
             {
-                "mode": "default",
                 "template_config": {
                     "image": default_image,
                 },
-                "template_slice_config": {
-                    "group_size": 2,
-                    "pool_size": 1,
-                    "model_devi_group_size": 30,
-                },
+                "template_slice_config": {"group_size": 2, "pool_size": 1},
             }
         )
+        explore_config = {"mode": "default", "model_devi_group_size": 30}
         caly_evo_step_op = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
@@ -226,6 +219,7 @@ class TestPrepRunCaly(unittest.TestCase):
             caly_evo_step_op,
             PrepCalyModelDevi,
             MockedRunCalyModelDevi,
+            explore_config=explore_config,
             prep_config=prep_default_config,
             run_config=run_default_config,
             upload_python_packages=upload_python_packages,

@@ -142,6 +142,7 @@ def make_concurrent_learning_op(
     train_style: str = "dp",
     explore_style: str = "lmp",
     fp_style: str = "vasp",
+    explore_config: dict = {},
     prep_train_config: dict = default_config,
     run_train_config: dict = default_config,
     prep_explore_config: dict = default_config,
@@ -154,7 +155,7 @@ def make_concurrent_learning_op(
     upload_python_packages: Optional[List[os.PathLike]] = None,
     valid_data: Optional[S3Artifact] = None,
 ):
-    expl_mode = run_explore_config.get("mode", "default")
+    expl_mode = explore_config.get("mode", "default")
     if train_style in ("dp", "dp-dist"):
         prep_run_train_op = PrepRunDPTrain(
             "prep-run-dp-train",
@@ -205,6 +206,7 @@ def make_concurrent_learning_op(
             caly_evo_step_op=caly_evo_step_op,
             prep_caly_model_devi_op=PrepCalyModelDevi,
             run_caly_model_devi_op=RunCalyModelDevi,
+            explore_config=explore_config,
             prep_config=prep_explore_config,
             run_config=run_explore_config,
             upload_python_packages=upload_python_packages,
@@ -453,6 +455,8 @@ def workflow_concurrent_learning(
 ) -> Tuple[Step, Optional[Step]]:
     default_config = config["default_step_config"]
 
+    train_config = config["train"]["config"]
+    explore_config = config["explore"]["config"]
     train_style = config["train"]["type"]
     explore_style = config["explore"]["type"]
     fp_style = config["fp"]["type"]
@@ -506,6 +510,7 @@ def workflow_concurrent_learning(
         train_style,
         explore_style,
         fp_style,
+        explore_config=explore_config,
         prep_train_config=prep_train_config,
         run_train_config=run_train_config,
         prep_explore_config=prep_explore_config,
@@ -527,8 +532,7 @@ def workflow_concurrent_learning(
         template_script = [json.loads(Path(ii).read_text()) for ii in template_script_]
     else:
         template_script = json.loads(Path(template_script_).read_text())
-    train_config = config["train"]["config"]
-    explore_config = config["explore"]["config"]
+
     if (
         "teacher_model_path" in explore_config
         and explore_config["teacher_model_path"] is not None

@@ -59,8 +59,8 @@ class TestPrepCalyModelDevi(unittest.TestCase):
 
         self.group_size = 5
         self.ngroup = ntrajs_dir * ntrajs_per_dir / self.group_size
-        self.template_slice_config_1 = {"model_devi_group_size": self.group_size}
-        self.template_slice_config_2 = {}
+        self.model_devi_group_size_1 = self.group_size
+        self.model_devi_group_size_2 = 0
 
     def tearDown(self):
         shutil.rmtree(self.ref_dir)
@@ -72,7 +72,7 @@ class TestPrepCalyModelDevi(unittest.TestCase):
             OPIO(
                 {
                     "task_name": self.run_dir_name,
-                    "template_slice_config": self.template_slice_config_1,
+                    "model_devi_group_size": self.model_devi_group_size_1,
                     "traj_results": self.ref_traj_results,
                 }
             )
@@ -99,7 +99,7 @@ class TestPrepCalyModelDevi(unittest.TestCase):
             OPIO(
                 {
                     "task_name": self.run_dir_name,
-                    "template_slice_config": self.template_slice_config_2,
+                    "model_devi_group_size_2": self.model_devi_group_size_2,
                     "traj_results": self.ref_traj_results,
                 }
             )
