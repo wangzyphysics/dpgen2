@@ -99,7 +99,7 @@ class TestPrepCalyModelDevi(unittest.TestCase):
             OPIO(
                 {
                     "task_name": self.run_dir_name,
-                    "model_devi_group_size_2": self.model_devi_group_size_2,
+                    "model_devi_group_size": self.model_devi_group_size_2,
                     "traj_results": self.ref_traj_results,
                 }
             )
