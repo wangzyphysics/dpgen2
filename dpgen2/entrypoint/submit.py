@@ -142,7 +142,6 @@ def make_concurrent_learning_op(
     train_style: str = "dp",
     explore_style: str = "lmp",
     fp_style: str = "vasp",
-    explore_config: dict = {},
     prep_train_config: dict = default_config,
     run_train_config: dict = default_config,
     prep_explore_config: dict = default_config,
@@ -155,7 +154,6 @@ def make_concurrent_learning_op(
     upload_python_packages: Optional[List[os.PathLike]] = None,
     valid_data: Optional[S3Artifact] = None,
 ):
-    expl_mode = explore_config.get("mode", "default")
     if train_style in ("dp", "dp-dist"):
         prep_run_train_op = PrepRunDPTrain(
             "prep-run-dp-train",
@@ -177,7 +175,8 @@ def make_concurrent_learning_op(
             run_config=run_explore_config,
             upload_python_packages=upload_python_packages,
         )
-    elif explore_style == "calypso":
+    elif "calypso" in explore_style:
+        expl_mode = explore_style.split(":")[-1] if ":" in explore_style else "default"
         if expl_mode == "merge":
             caly_evo_step_op = CalyEvoStepMerge(
                 name="caly-evo-step",
@@ -199,14 +198,16 @@ def make_concurrent_learning_op(
                 upload_python_packages=upload_python_packages,
             )
         else:
-            raise KeyError(f"Unknown key: {expl_mode}, support `default` and `merge`.")
+            raise KeyError(
+                f"Unknown key: {explore_style}, support `calypso:default` and `calypso:merge`."
+            )
         prep_run_explore_op = PrepRunCaly(
             "prep-run-calypso",
             prep_caly_input_op=PrepCalyInput,
             caly_evo_step_op=caly_evo_step_op,
             prep_caly_model_devi_op=PrepCalyModelDevi,
             run_caly_model_devi_op=RunCalyModelDevi,
-            explore_config=explore_config,
+            expl_mode=expl_mode,
             prep_config=prep_explore_config,
             run_config=run_explore_config,
             upload_python_packages=upload_python_packages,
@@ -510,7 +511,6 @@ def workflow_concurrent_learning(
         train_style,
         explore_style,
         fp_style,
-        explore_config=explore_config,
         prep_train_config=prep_train_config,
         run_train_config=run_train_config,
         prep_explore_config=prep_explore_config,

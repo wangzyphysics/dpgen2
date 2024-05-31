@@ -57,7 +57,7 @@ class PrepRunCaly(Steps):
         caly_evo_step_op: Union[OPTemplate, OP],
         prep_caly_model_devi_op: Type[OP],
         run_caly_model_devi_op: Type[OP],
-        explore_config: dict = {},
+        expl_mode: str = "default",
         prep_config: dict = normalize_step_dict({}),
         run_config: dict = normalize_step_dict({}),
         upload_python_packages: Optional[List[os.PathLike]] = None,
@@ -115,7 +115,7 @@ class PrepRunCaly(Steps):
             caly_evo_step_op,
             prep_caly_model_devi_op,
             run_caly_model_devi_op,
-            explore_config=explore_config,
+            expl_mode=expl_mode,
             prep_config=prep_config,
             run_config=run_config,
             upload_python_packages=upload_python_packages,
@@ -149,7 +149,7 @@ def _prep_run_caly(
     caly_evo_step_op: Union[OPTemplate, OP],
     prep_caly_model_devi_op: Type[OP],
     run_caly_model_devi_op: Type[OP],
-    explore_config: dict = {},
+    expl_mode: str = "default",
     prep_config: dict = normalize_step_dict({}),
     run_config: dict = normalize_step_dict({}),
     upload_python_packages: Optional[List[os.PathLike]] = None,
@@ -161,8 +161,6 @@ def _prep_run_caly(
     prep_executor = init_executor(prep_config.pop("executor"))
     run_executor = init_executor(run_config.pop("executor"))
     template_slice_config = run_config.pop("template_slice_config", {})
-    expl_mode = explore_config.get("mode", "default")
-    model_devi_group_size = explore_config.get("model_devi_group_size", 0)
 
     # prep caly input files
     prep_caly_input = Step(
@@ -255,7 +253,7 @@ def _prep_run_caly(
         ),
         parameters={
             "task_name": "prep-calypso-model-deviation",
-            "model_devi_group_size": model_devi_group_size,
+            "expl_config": prep_run_caly_steps.inputs.parameters["explore_config"],
         },
         artifacts={
             "traj_results": caly_evo_step.outputs.artifacts["traj_results"],

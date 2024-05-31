@@ -149,6 +149,7 @@ class TestPrepRunCaly(unittest.TestCase):
             }
         )
         explore_config = {"mode": "merge", "model_devi_group_size": 30}
+        expl_mode = explore_config.get("mode")
         caly_evo_step_op = CalyEvoStepMerge(
             name="caly-evo-step",
             collect_run_caly=MockedCollRunCaly,
@@ -164,7 +165,7 @@ class TestPrepRunCaly(unittest.TestCase):
             caly_evo_step_op,
             PrepCalyModelDevi,
             MockedRunCalyModelDevi,
-            explore_config=explore_config,
+            expl_mode=expl_mode,
             prep_config=prep_default_config,
             run_config=run_default_config,
             upload_python_packages=upload_python_packages,
@@ -204,6 +205,7 @@ class TestPrepRunCaly(unittest.TestCase):
             }
         )
         explore_config = {"mode": "default", "model_devi_group_size": 30}
+        expl_mode = explore_config.get("mode")
         caly_evo_step_op = CalyEvoStep(
             "caly-evo-run",
             MockedCollRunCaly,
@@ -219,7 +221,7 @@ class TestPrepRunCaly(unittest.TestCase):
             caly_evo_step_op,
             PrepCalyModelDevi,
             MockedRunCalyModelDevi,
-            explore_config=explore_config,
+            expl_mode=expl_mode,
             prep_config=prep_default_config,
             run_config=run_default_config,
             upload_python_packages=upload_python_packages,
