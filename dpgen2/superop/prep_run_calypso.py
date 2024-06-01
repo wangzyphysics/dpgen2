@@ -253,7 +253,7 @@ def _prep_run_caly(
         ),
         parameters={
             "task_name": "prep-calypso-model-deviation",
-            "expl_config": prep_run_caly_steps.inputs.parameters["explore_config"],
+            "config": prep_run_caly_steps.inputs.parameters["explore_config"],
         },
         artifacts={
             "traj_results": caly_evo_step.outputs.artifacts["traj_results"],

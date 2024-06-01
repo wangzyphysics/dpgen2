@@ -72,7 +72,7 @@ class TestPrepCalyModelDevi(unittest.TestCase):
             OPIO(
                 {
                     "task_name": self.run_dir_name,
-                    "expl_config": explore_config,
+                    "config": explore_config,
                     "traj_results": self.ref_traj_results,
                 }
             )
@@ -100,7 +100,7 @@ class TestPrepCalyModelDevi(unittest.TestCase):
             OPIO(
                 {
                     "task_name": self.run_dir_name,
-                    "expl_config": explore_config,
+                    "config": explore_config,
                     "traj_results": self.ref_traj_results,
                 }
             )
