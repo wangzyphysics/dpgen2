@@ -258,8 +258,12 @@ def make_naive_exploration_scheduler(
 
     if explore_style == "lmp":
         return make_lmp_naive_exploration_scheduler(config)
-    elif explore_style == "calypso":
+    elif "calypso" in explore_style:
         return make_calypso_naive_exploration_scheduler(config)
+    else:
+        raise KeyError(
+            f"Unknown key `{explore_style}`, Only support `lmp`, `calypso`, `calypso:merge` and `calypso:default`."
+        )
 
 
 def make_calypso_naive_exploration_scheduler(config):
