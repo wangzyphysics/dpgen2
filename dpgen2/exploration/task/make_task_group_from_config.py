@@ -499,18 +499,6 @@ def config_strip_confidx(
     return cc
 
 
-def make_task_group_from_config(
-    numb_models,
-    mass_map,
-    config,
-):
-    explore_type = config["explore"]["type"]
-    if explore_type == "lmp":
-        return make_lmp_task_group_from_config(numb_models, mass_map, config)
-    elif explore_type == "calypso":
-        return make_calypso_task_group_from_config(config)
-
-
 def make_calypso_task_group_from_config(config):
     config.pop("type", None)
     config = caly_normalize(config)
